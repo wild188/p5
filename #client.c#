@@ -23,7 +23,7 @@
 
 /*
  * help() - Print a help message
-0 */
+ */
 void help(char *progname) {
     printf("Usage: %s [OPTIONS]\n", progname);
     printf("Perform a PUT or a GET from a network file server\n");
@@ -111,7 +111,7 @@ void echo_client(int fd) {
         }
 
         /* read input back from socket (again, handle short counts)*/
-        bzero(buf, MAXLINE);
+	/*        bzero(buf, MAXLINE);
         bufp = buf;
         nremain = MAXLINE;
         while (1) {
@@ -130,7 +130,7 @@ void echo_client(int fd) {
                 break;
             }
         }
-
+*/
         /* output the result */
         printf("%s", buf);
     }
