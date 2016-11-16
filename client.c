@@ -110,7 +110,7 @@ void echo_client(int fd) {
             bufp += nsofar;
         }
 
-        /* read input back from socket (again, handle short counts)*/
+        // read input back from socket (again, handle short counts)
         bzero(buf, MAXLINE);
         bufp = buf;
         nremain = MAXLINE;
@@ -120,7 +120,7 @@ void echo_client(int fd) {
                     die("read error: ", strerror(errno));
                 continue;
             }
-            /* in echo, server should never EOF */
+            // in echo, server should never EOF 
             if (nsofar == 0)
                 die("Server error: ", "received EOF");
             bufp += nsofar;
@@ -129,9 +129,9 @@ void echo_client(int fd) {
                 *bufp = 0;
                 break;
             }
-        }
+	}
 
-        /* output the result */
+        // output the result
         printf("%s", buf);
     }
 }
