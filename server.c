@@ -24,7 +24,7 @@ struct request{
   int type;
   char* name;
   int size_bytes;
-}
+};
 
 void help(char *progname) {
     printf("Usage: %s [OPTIONS]\n", progname);
@@ -209,7 +209,7 @@ void file_server(int connfd, int lru_size) {
 		}
 		break;
 	      case 2:
-		if(myRequest->type == "PUT"){
+		if(myRequest->type == PUT){
 		  check = popSize(bufp, myRequest);
 		  if(check){
 		    requestCount++;
