@@ -125,6 +125,7 @@ void handle_requests(int listenfd, void (*service_function)(int, int), int param
 struct fileBuffer * removeOldest(){
     struct fileBuffer * oldest = NULL;
     int high = 0;
+    int i = 0;
     while(i < cacheSize){
         if(cache[i] == NULL){
             return cache[i];
@@ -160,7 +161,7 @@ void updateEvictionScores(struct fileBuffer * inUse){
     int i = 0;
     //increments all the eviction scores
     while(i < cacheSize && cache[i] != NULL){
-        cache->eviction_score += 1;
+        cache[i]->eviction_score += 1;
         i++;
     }
     //sets the currently used cached file to zero
