@@ -161,7 +161,7 @@ void file_server(int connfd, int lru_size) {
   int requestCount = 0;
   int check;
   struct request *myRequest = malloc(sizeof(struct request));
-  
+  char * currentFileContents;
   while (1) {
         const int MAXLINE = 8192;
         char      buf[MAXLINE];   /* a place to store text from the client */
@@ -190,60 +190,11 @@ void file_server(int connfd, int lru_size) {
             bufp += nsofar;
             nremain -= nsofar;
             if (*(bufp-1) == '\n') {
-	      //*(bufp - 1) = 0;
-              /*switch(requestCount){
-	      case 0:
-		printf("print left nut\nbufp is: %s\n", (bufp - nsofar));
-		check = popType((bufp - nsofar), myRequest);
-		if(check){ 
-		  requestCount++;
-		  *bufp = 0;
-		  printf("requestType is %d\n", myRequest->type);
-		} 
-		
-		break;
-	      case 1:
-		printf("Filename: %s\n", bufp - nsofar);
-		check = popName((bufp - nsofar), myRequest);
-		if(check){
-		  requestCount++;
-		  *bufp = 0;
-		  printf("name is %s\n", myRequest->name);
-		}
-		
-		break;
-	      case 2:
-		if(myRequest->type == PUT){
-		  check = popSize((bufp - nsofar), myRequest);
-		  if(check){
-		    requestCount++;
-		    *bufp = 0;
-		    printf("size is %d\n", myRequest->size_bytes);
-		  }
-		  else{
-		    *bufp = 0;
-		    continue;
-		  }
-		}
-		else{
-		  //It is a Get so send the file to the client
-		  requestCount = 0;
-		  break;
-		}
-		break;
-	      case 3:
-		printf("contents of the file: %s\n", bufp);
-	      //it is a PUT request so write the contents from bufp to the filename specifies in myRequest
-		*bufp = 0;
-		*(bufp - 1) = '\n';
-		break;
-	      }*/
 	      break;
 	    }
 	   
 	    printf("got to end of while loop\n");
-	    //nsofar = 0;
-	    //break;
+	    
 	}
 	
 	printf("contents of bufp: %s\ncontents of buf: %s", bufp, buf);
@@ -251,6 +202,10 @@ void file_server(int connfd, int lru_size) {
     if(requestCount == 3){
         printf("contents of the file: %s\n", bufp);
 	      //it is a PUT request so write the contents from bufp to the filename specifies in myRequest
+
+          //Nate this all you!
+          //write to the currentFileContents 
+
 		*bufp = 0;
 		*(bufp - 1) = '\n';
     }else if(requestCount == 2){
@@ -260,6 +215,7 @@ void file_server(int connfd, int lru_size) {
 		    requestCount++;
 		    *bufp = 0;
 		    printf("size is %d\n", myRequest->size_bytes);
+            currentFileContents = malloc(myRequest->size_bytes);
 		  }
 		  else{
 		    *bufp = 0;
