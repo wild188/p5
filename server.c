@@ -121,8 +121,9 @@ void file_server(int connfd, int lru_size) {
 
     /* sample code: continually read lines from the client, and send them
        back to the client immediately */
-  int requestFlag = 0;
-    while (1) {
+  int requestCount = 0;
+  int check;
+  while (1) {
         const int MAXLINE = 8192;
         char      buf[MAXLINE];   /* a place to store text from the client */
         bzero(buf, MAXLINE);
@@ -131,7 +132,7 @@ void file_server(int connfd, int lru_size) {
         char *bufp = buf;              /* current pointer into buffer */
         ssize_t nremain = MAXLINE;     /* max characters we can still read */
         size_t nsofar;             
-	struct request myRequest;
+	struct request *myRequest;
         while (1) {
             /* read some data; swallow EINTRs */
             if ((nsofar = read(connfd, bufp, nremain)) < 0) {
@@ -148,13 +149,55 @@ void file_server(int connfd, int lru_size) {
             bufp += nsofar;
             nremain -= nsofar;
             if (*(bufp-1) == '\n') {
-              if(requestFlag == 0){
-		popType(bufp, myRequest);
-	      }  
-	      *bufp = 0;
-                break;
-            }
-        }
+              switch(requestCount){
+	      case 0:
+		check = popType(bufp, myRequest);
+		if(check){ 
+		  requestCount++;
+		  *bufp = 0;
+		} 
+		else{
+		  *bufp = 0;
+		  continue;
+		}
+		break;
+	      case 1:
+		check = popName(bufp, myRequest);
+		if(check){
+		  requestCount++;
+		  *bufp = 0;
+		}
+		else{
+		  *bufp = 0;
+		  continue;
+		}
+		break;
+	      case 2:
+		if(myRequest->type == "PUT"){
+		  check = popSize(bufp, myRequest);
+		  if(check){
+		    requestCount++;
+		    *bufp = 0;
+		  }
+		  else{
+		    *bufp = 0;
+		    continue;
+		  }
+		}
+		else{
+		  //It is a Get so send the file to the client
+		  requestCount = 0;
+		  break;
+		}
+		break;
+	      case 3:
+	      //it is a PUT request so write the contents from bufp to the filename specifies in myRequest
+		requestCount = 0;
+		*bufp = 0;
+		break;
+	      }
+	    }
+	}
 
 	printf("contents of bufp: %s\ncontents of buf: %s", bufp, buf);
 
