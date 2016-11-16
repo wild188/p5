@@ -160,6 +160,8 @@ void file_server(int connfd, int lru_size) {
        back to the client immediately */
   int requestCount = 0;
   int check;
+  struct request *myRequest = malloc(sizeof(struct request));
+  
   while (1) {
         const int MAXLINE = 8192;
         char      buf[MAXLINE];   /* a place to store text from the client */
@@ -169,13 +171,14 @@ void file_server(int connfd, int lru_size) {
         char *bufp = buf;              /* current pointer into buffer */
         ssize_t nremain = MAXLINE;     /* max characters we can still read */
         size_t nsofar;             
-	struct request *myRequest = malloc(sizeof(struct request));
+	printf("Waiting for next line on %d\n", connfd);
         while (1) {
             /* read some data; swallow EINTRs */
             if ((nsofar = read(connfd, bufp, nremain)) < 0) {
                 if (errno != EINTR)
                     die("read error: ", strerror(errno));
-                continue;
+		printf("recieved and EINTR\n");
+		continue;
             }
 	    printf("intial buffer: %s\n", bufp);
             /* end service to this client on EOF */
@@ -243,12 +246,13 @@ void file_server(int connfd, int lru_size) {
 	    }
 	   
 	    printf("got to end of while loop\n");
-	    nsofar = 0;
+	    //nsofar = 0;
 	    break;
 	}
-	//continue;
+	
 	printf("contents of bufp: %s\ncontents of buf: %s", bufp, buf);
-
+	//continue;
+	
         /* dump content back to client (again, must handle short counts) */
         printf("server received %d bytes\n", MAXLINE-nremain);
         nremain = bufp - buf;
