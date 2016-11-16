@@ -110,7 +110,8 @@ void handle_requests(int listenfd, void (*service_function)(int, int), int param
 }
 
 int popType(char* cmd, struct request *myRequest){
-    if(!strcmp(cmd, "PUT")){
+  printf("\ncommand is %s\n", cmd);  
+  if(!strcmp(cmd, "PUT")){
         myRequest->type = PUT;
         return 1;
     }else if(!strcmp(cmd, "GET")){
@@ -168,7 +169,7 @@ void file_server(int connfd, int lru_size) {
         char *bufp = buf;              /* current pointer into buffer */
         ssize_t nremain = MAXLINE;     /* max characters we can still read */
         size_t nsofar;             
-	struct request *myRequest;
+	struct request *myRequest = malloc(sizeof(struct request));
         while (1) {
             /* read some data; swallow EINTRs */
             if ((nsofar = read(connfd, bufp, nremain)) < 0) {
@@ -176,6 +177,7 @@ void file_server(int connfd, int lru_size) {
                     die("read error: ", strerror(errno));
                 continue;
             }
+	    printf("intial buffer: %s\n", bufp);
             /* end service to this client on EOF */
             if (nsofar == 0) {
                 fprintf(stderr, "received EOF\n");
@@ -185,35 +187,41 @@ void file_server(int connfd, int lru_size) {
             bufp += nsofar;
             nremain -= nsofar;
             if (*(bufp-1) == '\n') {
+	      *(bufp - 1) = 0;
               switch(requestCount){
 	      case 0:
-		check = popType(bufp, myRequest);
+		printf("print left nut\nbufp is: %s\n", (bufp - nsofar));
+		check = popType((bufp - nsofar), myRequest);
 		if(check){ 
 		  requestCount++;
 		  *bufp = 0;
+		  printf("requestType is %d\n", myRequest->type);
 		} 
-		else{
+		/*else{
 		  *bufp = 0;
 		  continue;
-		}
+		  }*/
 		break;
 	      case 1:
-		check = popName(bufp, myRequest);
+		printf("Filename: %s\n", bufp - nsofar);
+		check = popName((bufp - nsofar), myRequest);
 		if(check){
 		  requestCount++;
 		  *bufp = 0;
+		  printf("name is %s\n", myRequest->name);
 		}
-		else{
+		/*else{
 		  *bufp = 0;
 		  continue;
-		}
+		  }*/
 		break;
 	      case 2:
 		if(myRequest->type == PUT){
-		  check = popSize(bufp, myRequest);
+		  check = popSize((bufp - nsofar), myRequest);
 		  if(check){
 		    requestCount++;
 		    *bufp = 0;
+		    printf("size is %d\n", myRequest->size_bytes);
 		  }
 		  else{
 		    *bufp = 0;
@@ -227,12 +235,16 @@ void file_server(int connfd, int lru_size) {
 		}
 		break;
 	      case 3:
+		printf("contents of the file: %s\n", bufp);
 	      //it is a PUT request so write the contents from bufp to the filename specifies in myRequest
-		requestCount = 0;
 		*bufp = 0;
 		break;
 	      }
 	    }
+	   
+	    printf("got to end of while loop\n");
+	    nsofar = 0;
+	    break;
 	}
 
 	printf("contents of bufp: %s\ncontents of buf: %s", bufp, buf);
@@ -251,7 +263,7 @@ void file_server(int connfd, int lru_size) {
             nremain -= nsofar;
             bufp += nsofar;
         }
-    }
+  }
 }
 
 /*
