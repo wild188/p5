@@ -238,11 +238,12 @@ void file_server(int connfd, int lru_size) {
 		*(bufp - 1) = '\n';
 		break;
 	      }*/
+	      break;
 	    }
 	   
 	    printf("got to end of while loop\n");
 	    //nsofar = 0;
-	    break;
+	    //break;
 	}
 	
 	printf("contents of bufp: %s\ncontents of buf: %s", bufp, buf);
@@ -252,7 +253,7 @@ void file_server(int connfd, int lru_size) {
 	      //it is a PUT request so write the contents from bufp to the filename specifies in myRequest
 		*bufp = 0;
 		*(bufp - 1) = '\n';
-    }else if(requstCount == 2){
+    }else if(requestCount == 2){
         if(myRequest->type == PUT){
 		  check = popSize((bufp - nsofar), myRequest);
 		  if(check){
