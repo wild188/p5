@@ -18,7 +18,8 @@
 /*
  * help() - Print a help message
  */
-
+const int PUT = 1;
+const int GET = 2;
 struct request{
   int type;
   char* name;
@@ -106,6 +107,41 @@ void handle_requests(int listenfd, void (*service_function)(int, int), int param
         if (close(connfd) < 0)
             die("Error in close(): ", strerror(errno));
     }
+}
+
+int popType(char* cmd, struct request *myRequest){
+    if(!strcmp(cmd, "PUT")){
+        myRequest->type = PUT;
+        return 1;
+    }else if(!strcmp(cmd, "GET")){
+        myRequest->type = GET;
+        return 1;
+    }
+    return 0;
+}
+
+int popName(char* name, struct request *myRequest){
+    if(!strlen(name)){ //name is empty
+        return 0;
+    }
+    if(myRequest->type == GET){
+        if(fopen(name, "r") == NULL){
+            return 0;
+        }
+    }
+    myRequest->name = strdup(name);
+    return 1;
+}
+
+int popSize(char *sizeStr, struct request *myRequest){
+    int sizeInt;
+     if(!sscanf(sizeStr, "%d", &sizeInt)){
+         return 0;
+     }else if(sizeInt < 1){
+         return 0;
+     }
+     myRequest->size_bytes = sizeInt;
+     return 1;
 }
 
 /*
