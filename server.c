@@ -34,9 +34,9 @@ struct fileBuffer{
     char* contents;
 };
 
-struct fileBuffer * cache;
-maxCacheSize;
-cacheSize;
+struct fileBuffer ** cache;
+int maxCacheSize;
+int cacheSize;
 
 void help(char *progname) {
     printf("Usage: %s [OPTIONS]\n", progname);
@@ -143,7 +143,7 @@ void addFileBuffer(struct fileBuffer * myFile){
     if(cacheSize < maxCacheSize){
         cache[cacheSize] = myFile;
     }else{
-        struct fileBuffer replace * = removeOldest();
+        struct fileBuffer * replace  = removeOldest();
         replace = myFile;
     }
     updateEvictionScores(myFile);
