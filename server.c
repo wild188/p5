@@ -35,6 +35,8 @@ struct fileBuffer{
 }
 
 struct fileBuffer * cache;
+maxCacheSize;
+cacheSize;
 
 void help(char *progname) {
     printf("Usage: %s [OPTIONS]\n", progname);
@@ -119,16 +121,32 @@ void handle_requests(int listenfd, void (*service_function)(int, int), int param
     }
 }
 
-void lruCacheSetup(int size){
+struct fileBuffer * removeOldest(){
+    return NULL;
+}
 
+void updateEvictionScores(struct fileBuffer * inUse){
+ 
+}
+
+void lruCacheSetup(int size){
+    cache = malloc(sizeof(struct fileBuffer) * size);
+    maxCacheSize = size;
+    cacheSize = 0;
 }
 
 struct fileBuffer getFileBuffer(char * filename){ //returns null if nothing is found
     return NULL;
 }
 
-void addFileBuffer(struct fileBuffer myFile){
-
+void addFileBuffer(struct fileBuffer * myFile){
+    if(cacheSize < maxCacheSize){
+        cache[cacheSize] = myFile;
+    }else{
+        struct fileBuffer replace * = removeOldest();
+        replace = myFile;
+    }
+    updateEvictionScores(myFile);
 }
 
 int popType(char* cmd, struct request *myRequest){
