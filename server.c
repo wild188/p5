@@ -20,11 +20,21 @@
  */
 const int PUT = 1;
 const int GET = 2;
+
 struct request{
   int type;
   char* name;
   int size_bytes;
 };
+
+struct fileBuffer{
+    char * name;
+    int size;
+    int eviction_score;
+    char* contents;
+}
+
+struct fileBuffer * cache;
 
 void help(char *progname) {
     printf("Usage: %s [OPTIONS]\n", progname);
@@ -107,6 +117,18 @@ void handle_requests(int listenfd, void (*service_function)(int, int), int param
         if (close(connfd) < 0)
             die("Error in close(): ", strerror(errno));
     }
+}
+
+void lruCacheSetup(int size){
+
+}
+
+struct fileBuffer getFileBuffer(char * filename){ //returns null if nothing is found
+    return NULL;
+}
+
+void addFileBuffer(struct fileBuffer myFile){
+
 }
 
 int popType(char* cmd, struct request *myRequest){
