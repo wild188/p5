@@ -246,7 +246,7 @@ void file_server(int connfd, int lru_size) {
 	    nsofar = 0;
 	    break;
 	}
-
+	//continue;
 	printf("contents of bufp: %s\ncontents of buf: %s", bufp, buf);
 
         /* dump content back to client (again, must handle short counts) */
