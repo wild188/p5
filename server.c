@@ -121,28 +121,71 @@ void handle_requests(int listenfd, void (*service_function)(int, int), int param
     }
 }
 
+//finds and frees the oldest cached file
 struct fileBuffer * removeOldest(){
+    struct fileBuffer * oldest = NULL;
+    int high = 0;
+    while(i < cacheSize){
+        if(cache[i] == NULL){
+            return cache[i];
+        }else{
+            if(cache[i]->eviction_score > high){
+                high = cache[i]->eviction_score;
+                oldest = cache[i];
+            }
+        }
+
+        i++;
+    }
+    if(oldest != NULL){
+        free(oldest);
+    }
+    //returns the free pointer to be used for a more recent file
+    return oldest;
+}
+
+struct fileBuffer * getFileBuffer(char * filename){ //returns null if nothing is found
+    int i;
+    //finds file with the same name
+    for(i = 0; i < cacheSize; i++){
+        if(cache[i] != NULL && !strcmp(cache[i]->name, filename)){
+            return cache[i];
+        }
+    }
     return NULL;
 }
 
 void updateEvictionScores(struct fileBuffer * inUse){
- 
+
+    int i = 0;
+    //increments all the eviction scores
+    while(i < cacheSize && cache[i] != NULL){
+        cache->eviction_score += 1;
+        i++;
+    }
+    //sets the currently used cached file to zero
+    inUse->eviction_score = 0;
 }
 
 void lruCacheSetup(int size){
+    //initializes the cache max size and current size
     cache = malloc(sizeof(struct fileBuffer) * size);
     maxCacheSize = size;
     cacheSize = 0;
 }
 
-struct fileBuffer * getFileBuffer(char * filename){ //returns null if nothing is found
-    return NULL;
-}
+
 
 void addFileBuffer(struct fileBuffer * myFile){
-    if(cacheSize < maxCacheSize){
+    //point to a cached file with the same name or NULL if it doesnt exist
+    struct fileBuffer * oldVersion = getFileBuffer(myFile->name);
+
+    if(oldVersion != NULL){             //replaces a file with the same name in the cache
+        oldVersion = myFile;
+    }else if(cacheSize < maxCacheSize){ //adds a new file to the cache
         cache[cacheSize] = myFile;
-    }else{
+        cacheSize++;
+    }else{                              //replaces the oldest file in the cache
         struct fileBuffer * replace  = removeOldest();
         replace = myFile;
     }
