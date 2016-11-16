@@ -241,6 +241,7 @@ void file_server(int connfd, int lru_size) {
 		printf("contents of the file: %s\n", bufp);
 	      //it is a PUT request so write the contents from bufp to the filename specifies in myRequest
 		*bufp = 0;
+		*(bufp - 1) = '\n';
 		break;
 	      }
 	    }
