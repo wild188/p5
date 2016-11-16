@@ -206,8 +206,12 @@ int popType(char* cmd, struct request *myRequest){
 }
 
 int popName(char* name, struct request *myRequest){
-  char nameTemp[20];
-  strcpy(nameTemp, name);
+  int flag = 0;
+  int len = strlen(name);
+  if(name[len - 1] == '\n'){
+      name[len - 1] = '\0';
+      flag = 1;
+  }
   if(!strlen(name)){ //name is empty
         return 0;
     }
@@ -216,8 +220,10 @@ int popName(char* name, struct request *myRequest){
             return 0;
         }
     }
-    nameTemp[strlen(nameTemp) - 1] = '\0';
-    myRequest->name = strdup(nameTemp);
+    myRequest->name = strdup(name);
+    if(flag){
+        name[len - 1] = '\n';
+    }
     return 1;
 }
 
@@ -239,7 +245,7 @@ int popSize(char *sizeStr, struct request *myRequest){
 void file_server(int connfd, int lru_size) {
     /* TODO: set up a few static variables here to manage the LRU cache of
        files */
-
+       lruCacheSetup(lru_size);
     /* TODO: replace following sample code with code that satisfies the
        requirements of the assignment */
 
@@ -324,6 +330,10 @@ void file_server(int connfd, int lru_size) {
       }
       else{
 	//it is a get request
+
+    //call getFileBuffer if it gives you a real fileBuffer just use that
+    //if it is null read in a file as normal and write it to a fileBuffer and the client and pass it to addFileBuffer
+
 	FILE *getFile;
         getFile = fopen(myRequest->name, "r");
         strcpy(currentFileContents, buf);
@@ -385,7 +395,7 @@ int main(int argc, char **argv) {
     /* for getopt */
     long opt;
     /* NB: the "part 3" behavior only should happen when lru_size > 0 */
-    int  lru_size = 0;
+    int  lru_size = 10;
     int  port     = 9000;
 
     check_team(argv[0]);
