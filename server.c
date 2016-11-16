@@ -32,7 +32,7 @@ struct fileBuffer{
     int size;
     int eviction_score;
     char* contents;
-}
+};
 
 struct fileBuffer * cache;
 maxCacheSize;
@@ -135,7 +135,7 @@ void lruCacheSetup(int size){
     cacheSize = 0;
 }
 
-struct fileBuffer getFileBuffer(char * filename){ //returns null if nothing is found
+struct fileBuffer * getFileBuffer(char * filename){ //returns null if nothing is found
     return NULL;
 }
 
