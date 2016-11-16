@@ -18,6 +18,14 @@
 /*
  * help() - Print a help message
  */
+const int PUT = 1;
+const int GET = 2;
+struct request{
+  int type;
+  char* name;
+  int size_bytes;
+}
+
 void help(char *progname) {
     printf("Usage: %s [OPTIONS]\n", progname);
     printf("Initiate a network file server\n");
@@ -101,6 +109,41 @@ void handle_requests(int listenfd, void (*service_function)(int, int), int param
     }
 }
 
+int popType(char* cmd, struct request *myRequest){
+    if(!strcmp(cmd, "PUT")){
+        myRequest->type = PUT;
+        return 1;
+    }else if(!strcmp(cmd, "GET")){
+        myRequest->type = GET;
+        return 1;
+    }
+    return 0;
+}
+
+int popName(char* name, struct request *myRequest){
+    if(!strlen(name)){ //name is empty
+        return 0;
+    }
+    if(myRequest->type == GET){
+        if(fopen(name, "r") == NULL){
+            return 0;
+        }
+    }
+    myRequest->name = strdup(name);
+    return 1;
+}
+
+int popSize(char *sizeStr, struct request *myRequest){
+    int sizeInt;
+     if(!sscanf(sizeStr, "%d", &sizeInt)){
+         return 0;
+     }else if(sizeInt < 1){
+         return 0;
+     }
+     myRequest->size_bytes = sizeInt;
+     return 1;
+}
+
 /*
  * file_server() - Read a request from a socket, satisfy the request, and
  *                 then close the connection.
@@ -114,6 +157,7 @@ void file_server(int connfd, int lru_size) {
 
     /* sample code: continually read lines from the client, and send them
        back to the client immediately */
+  int requestFlag = 0;
     while (1) {
         const int MAXLINE = 8192;
         char      buf[MAXLINE];   /* a place to store text from the client */
@@ -122,7 +166,8 @@ void file_server(int connfd, int lru_size) {
         /* read from socket, recognizing that we may get short counts */
         char *bufp = buf;              /* current pointer into buffer */
         ssize_t nremain = MAXLINE;     /* max characters we can still read */
-        size_t nsofar;                 /* characters read so far */
+        size_t nsofar;             
+	struct request myRequest;
         while (1) {
             /* read some data; swallow EINTRs */
             if ((nsofar = read(connfd, bufp, nremain)) < 0) {
@@ -139,10 +184,15 @@ void file_server(int connfd, int lru_size) {
             bufp += nsofar;
             nremain -= nsofar;
             if (*(bufp-1) == '\n') {
-                *bufp = 0;
+              if(requestFlag == 0){
+		popType(bufp, myRequest);
+	      }  
+	      *bufp = 0;
                 break;
             }
         }
+
+	printf("contents of bufp: %s\ncontents of buf: %s", bufp, buf);
 
         /* dump content back to client (again, must handle short counts) */
         printf("server received %d bytes\n", MAXLINE-nremain);
