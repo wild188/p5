@@ -162,7 +162,9 @@ int popType(char* cmd, struct request *myRequest){
 }
 
 int popName(char* name, struct request *myRequest){
-    if(!strlen(name)){ //name is empty
+  char nameTemp[20];
+  strcpy(nameTemp, name);
+  if(!strlen(name)){ //name is empty
         return 0;
     }
     if(myRequest->type == GET){
@@ -170,7 +172,8 @@ int popName(char* name, struct request *myRequest){
             return 0;
         }
     }
-    myRequest->name = strdup(name);
+    nameTemp[strlen(nameTemp) - 1] = '\0';
+    myRequest->name = strdup(nameTemp);
     return 1;
 }
 
@@ -241,68 +244,93 @@ void file_server(int connfd, int lru_size) {
 	//continue;
     if(requestCount == 3){
         printf("contents of the file: %s\n", bufp);
-	      //it is a PUT request so write the contents from bufp to the filename specifies in myRequest
+	//it is a PUT request so write the contents from bufp to the filename specifies in myRequest
+	
+	//Nate this all you!
+	//write to the currentFileContents
+	//USE MY SKILZZZ I LEARNED IN THE MOUNTAINNSSSSS
 
-          //Nate this all you!
-          //write to the currentFileContents 
-
-		*bufp = 0;
-		*(bufp - 1) = '\n';
+	FILE *PUT;
+	PUT = fopen(myRequest->name, "w");
+	strcpy(currentFileContents, buf);
+	if(in != NULL){
+	  int writeErr = fputs(currentFileContents, PUT);
+	  fclose(PUT);
+	  //now server needs to send to the client OK\n
+	}
+	else{
+	  printf("could not open the file");
+	  //server needs to send to the client an error message
+	}
+	//*bufp = 0;
+	*(bufp - 1) = '\n';
     }else if(requestCount == 2){
-        if(myRequest->type == PUT){
-		  check = popSize((bufp - nsofar), myRequest);
-		  if(check){
-		    requestCount++;
-		    *bufp = 0;
-		    printf("size is %d\n", myRequest->size_bytes);
-            currentFileContents = malloc(myRequest->size_bytes);
-		  }
-		  else{
-		    *bufp = 0;
-		    continue;
-		  }
-		}
-		else{
-		  //It is a Get so send the file to the client
-		  requestCount = 0;
-		  break;
-		}
-    }else if(requestCount == 1){
-        printf("Filename: %s\n", bufp - nsofar);
-		check = popName((bufp - nsofar), myRequest);
-		if(check){
-		  requestCount++;
-		  *bufp = 0;
-		  printf("name is %s\n", myRequest->name);
-		}
-    }else if(requestCount == 0){
-        printf("print left nut\nbufp is: %s\n", (bufp - nsofar));
-		check = popType((bufp - nsofar), myRequest);
-		if(check){ 
-		  requestCount++;
-		  *bufp = 0;
-		  printf("requestType is %d\n", myRequest->type);
-		}     
-    }
-
-        *bufp = 0; //not sure what this does
-
-        /* dump content back to client (again, must handle short counts) */
-        printf("server received %d bytes\n", MAXLINE-nremain);
-        nremain = bufp - buf;
-        bufp = buf;
-        while (nremain > 0) {
-            /* write some data; swallow EINTRs */
-            if ((nsofar = write(connfd, bufp, nremain)) <= 0) {
-                if (errno != EINTR)
-                    die("Write error: ", strerror(errno));
-                nsofar = 0;
-            }
-            nremain -= nsofar;
-            bufp += nsofar;
+      if(myRequest->type == PUT){
+	check = popSize((bufp - nsofar), myRequest);
+	if(check){
+	  requestCount++;
+	  *bufp = 0;
+	  printf("size is %d\n", myRequest->size_bytes);
+	  currentFileContents = malloc(myRequest->size_bytes);
+	}
+	else{
+	  *bufp = 0;
+	  continue;
+	}
+      }
+      else{
+	//it is a get request
+	FILE *GET;
+        GET = fopen(myRequest->name, "r");
+        strcpy(currentFileContents, buf);
+        if(in != NULL){
+          int writeErr = fputs(currentFileContents, PUT);
+          fclose(PUT);
+          //now server needs to send to the client OK\n                 
         }
-
-        
+        else{
+          printf("could not open the file");
+          //server needs to send to the client an error message         
+        }
+	requestCount = 0;
+	break;
+      }
+    }else if(requestCount == 1){
+      printf("Filename: %s\n", bufp - nsofar);
+      check = popName((bufp - nsofar), myRequest);
+      if(check){
+	requestCount++;
+	*bufp = 0;
+	printf("name is %s\n", myRequest->name);
+      }
+    }else if(requestCount == 0){
+      printf("print left nut\nbufp is: %s\n", (bufp - nsofar));
+      check = popType((bufp - nsofar), myRequest);
+      if(check){ 
+	requestCount++;
+	*bufp = 0;
+	printf("requestType is %d\n", myRequest->type);
+      }     
+    }
+    
+    *bufp = 0; //not sure what this does
+    
+    /* dump content back to client (again, must handle short counts) */
+    printf("server received %d bytes\n", MAXLINE-nremain);
+    nremain = bufp - buf;
+    bufp = buf;
+    while (nremain > 0) {
+      /* write some data; swallow EINTRs */
+      if ((nsofar = write(connfd, bufp, nremain)) <= 0) {
+	if (errno != EINTR)
+	  die("Write error: ", strerror(errno));
+	nsofar = 0;
+      }
+      nremain -= nsofar;
+      bufp += nsofar;
+    }
+    
+    
   }
 }
 
