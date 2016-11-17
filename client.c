@@ -75,6 +75,25 @@ int connect_to_server(char *server, int port) {
     return clientfd;
 }
 
+void readServerResponse(int fd, ssize_t nsofar, size_t nremain, char *bufp){
+  while (1) {
+    if ((nsofar = read(fd, bufp, nremain)) < 0) {
+      if (errno != EINTR)
+	die("read error: ", strerror(errno));
+      continue;
+    }
+    // in echo, server should never EOF                         
+    if (nsofar == 0)
+      die("Server error: ", "received EOF");
+    bufp += nsofar;
+    nremain -= nsofar;
+    if (*(bufp-1) == '\n') {
+      *bufp = 0;
+      break;
+    }
+  }
+}
+
 /*
  * echo_client() - this is dummy code to show how to read and write on a
  *                 socket when there can be short counts.  The code
@@ -126,25 +145,30 @@ void echo_client(int fd) {
 	  bzero(buf, MAXLINE);
 	  bufp = buf;
 	  nremain = MAXLINE;
-	  while (1) {
-	    if ((nsofar = read(fd, bufp, nremain)) < 0) {
-	      if (errno != EINTR)
-		die("read error: ", strerror(errno));
-	      continue;
-	    }
-	    // in echo, server should never EOF 
-	    if (nsofar == 0)
-	      die("Server error: ", "received EOF");
-	    bufp += nsofar;
-	    nremain -= nsofar;
-	    if (*(bufp-1) == '\n') {
-	      *bufp = 0;
-	      break;
-	    }
+	  if(flag == 4){
+	    readServerResponse(fd, nsofar, nremain, bufp);
+	    printf("%s", buf);
 	  }
-	  
 	  // output the result
-	  printf("%s", buf);
+	  if(flag == 2){
+	    readServerResponse(fd, nsofar, nremain, bufp);
+            printf("%s", buf);
+	    bzero(buf, MAXLINE);
+	    bufp = buf;
+	    nremain = MAXLINE;
+	    readServerResponse(fd, nsofar, nremain, bufp);
+            printf("%s", buf);
+	    bzero(buf, MAXLINE);
+	    bufp = buf;
+	    nremain = MAXLINE;
+	    readServerResponse(fd, nsofar, nremain, bufp);
+            printf("%s", buf);
+	    bzero(buf, MAXLINE);
+	    bufp = buf;
+	    nremain = MAXLINE;
+	    readServerResponse(fd, nsofar, nremain, bufp);
+            printf("%s", buf);
+	  }
 	  count = 0;
 	  flag = 0;
 	}
