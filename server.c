@@ -182,6 +182,7 @@ void addFileBuffer(struct fileBuffer * myFile){
     struct fileBuffer * oldVersion = getFileBuffer(myFile->name);
 
     if(oldVersion != NULL){             //replaces a file with the same name in the cache
+        free(oldVersion);
         oldVersion = myFile;
     }else if(cacheSize < maxCacheSize){ //adds a new file to the cache
         cache[cacheSize] = myFile;
@@ -262,7 +263,7 @@ void response(int connfd, int type, int OK, struct fileBuffer *fb){
   // append into one string
   int size = 3;
   if(type = 1){
-    size += (strlen(fb->name) + 1 + strlen(fb->size) + 1 strlen(fb->contents));
+    size += (strlen(fb->name) + 1 + strlen(fb->size) + 1 + strlen(fb->contents));
     char sendArray[size];
     
     
