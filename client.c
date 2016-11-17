@@ -87,6 +87,8 @@ void echo_client(int fd) {
         const int MAXLINE = 8192;
         char buf[MAXLINE];
         bzero(buf, MAXLINE);
+	//we need to change the fgets b/c transmission from 
+	//   client ends after a NL is detected
         if (fgets(buf, MAXLINE, stdin) == NULL) {
             if (ferror(stdin))
                 die("fgets error", strerror(errno));

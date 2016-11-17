@@ -182,6 +182,7 @@ void addFileBuffer(struct fileBuffer * myFile){
     struct fileBuffer * oldVersion = getFileBuffer(myFile->name);
 
     if(oldVersion != NULL){             //replaces a file with the same name in the cache
+        free(oldVersion);
         oldVersion = myFile;
     }else if(cacheSize < maxCacheSize){ //adds a new file to the cache
         cache[cacheSize] = myFile;
@@ -236,6 +237,51 @@ int popSize(char *sizeStr, struct request *myRequest){
      }
      myRequest->size_bytes = sizeInt;
      return 1;
+}
+
+void response(int connfd, int type, int OK, struct fileBuffer *fb){
+  //For GET type = 1
+  //For PUT type = 2
+  //If OK = 1 then the GET/PUT was successful, OK = 0 if not
+  //For a GET request the fb will hold all the data that needs to be 
+  //    transfered to the client
+
+  //if is PUT
+  ssize_t nsofar;
+  ssize_t nremain;
+  if(type == 2){
+    if((nsofar = write(connfd, "OK\n", 3)) <= 0){
+      if (errno != EINTR){
+	die("Write error: ", strerror(errno));
+      }
+      nsofar = 0;
+    }
+    return;
+  }
+  
+  //if GET
+  // append into one string
+  int size = 3;
+  if(type = 1){
+    size += (strlen(fb->name) + 1 + strlen(fb->size) + 1 strlen(fb->contents));
+    char sendArray[size];
+    
+    
+  }
+}
+
+  nremain = 3;
+  bufp = buf;
+  while (nremain > 0) {
+    /* write some data; swallow EINTRs */
+    if ((nsofar = write(connfd, bufp, nremain)) <= 0) {
+      if (errno != EINTR)
+	die("Write error: ", strerror(errno));
+      nsofar = 0;
+    }
+    nremain -= nsofar;
+    bufp += nsofar;
+  }
 }
 
 /*
@@ -306,6 +352,12 @@ void file_server(int connfd, int lru_size) {
 	if(putFile != NULL){
 	  int writeErr = fputs(currentFileContents, putFile);
 	  fclose(putFile);
+	  //creating a fileBuffer
+	  struct fileBuffer *putBuff = malloc(sizeof(struct fileBuffer));
+	  putBuff->name = myRequest->name;
+	  putBuff->size = myRequest->size_bytes;
+	  putBuff->contents = currentFileContents;
+	  addFileBuffer(putBuff);
 	  //now server needs to send to the client OK\n
 	}
 	else{
@@ -335,12 +387,39 @@ void file_server(int connfd, int lru_size) {
     //if it is null read in a file as normal and write it to a fileBuffer and the client and pass it to addFileBuffer
 
 	FILE *getFile;
+	char ch = 'a';
+	int index = 0;
+	int size = 0;
         getFile = fopen(myRequest->name, "r");
-        strcpy(currentFileContents, buf);
         if(getFile != NULL){
-          int writeErr = fputs(currentFileContents, getFile);
+	  //first get file size
+	  while((ch = fgetc(getFile)) != EOF){
+	    size++;
+	  }
+	  fclose(getFile);
+	  currentFileContents = malloc(sizeof(char) * size);
+	  getFile = fopen(myRequest->name, "r");
+	  //Then write to out malloced currentFileContents array
+          while((ch = fgetc(getFile)) != EOF){
+	    currentFileContents[index] = ch;
+	    index++;
+	  }
+	  index = 0;
           fclose(getFile);
-          //now server needs to send to the client OK\n                 
+	  //check if the file is already in LRC
+	  struct fileBuffer *getBuff = getFileBuffer(myRequest->name);
+	  if(!getBuff){
+	    //does not exist so need to cread a fileBuffer
+	    getBuff = malloc(sizeof(struct fileBuffer));
+	    getBuff->name = myRequest->name;
+	    getBuff->size = myRequest->size_bytes;
+	    getBuff->contents = currentFileContents;
+	    addFileBuffer(getBuff);
+	    //return the OK to the client w/ the getBuff info
+	  }
+	  else{
+	    //return the OK to the client w/ the getBuff info returned from cache
+	  }
         }
         else{
           printf("could not open the file");
@@ -369,20 +448,22 @@ void file_server(int connfd, int lru_size) {
     
     *bufp = 0; //not sure what this does
     
+    //This is the code that echos the client input back to it
+
     /* dump content back to client (again, must handle short counts) */
-    printf("server received %d bytes\n", MAXLINE-nremain);
+    /* printf("server received %d bytes\n", MAXLINE-nremain);
     nremain = bufp - buf;
     bufp = buf;
     while (nremain > 0) {
       /* write some data; swallow EINTRs */
-      if ((nsofar = write(connfd, bufp, nremain)) <= 0) {
+    /* if ((nsofar = write(connfd, bufp, nremain)) <= 0) {
 	if (errno != EINTR)
 	  die("Write error: ", strerror(errno));
 	nsofar = 0;
       }
       nremain -= nsofar;
       bufp += nsofar;
-    }
+    }*/
     
     
   }
