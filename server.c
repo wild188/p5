@@ -263,7 +263,7 @@ void response(int connfd, int type, int OK, struct fileBuffer *fb){
   // append into one string
   int size = 3;
   if(type = 1){
-    size += (strlen(fb->name) + 1 + strlen(fb->size) + 1 strlen(fb->contents));
+    size += (strlen(fb->name) + 1 + strlen(fb->size) + 1 + strlen(fb->contents));
     char sendArray[size];
     
     
