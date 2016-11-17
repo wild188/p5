@@ -82,6 +82,8 @@ int connect_to_server(char *server, int port) {
  */
 void echo_client(int fd) {
     // main loop
+  int count = 1;
+  int flag = 0;
     while (1) {
         /* set up a buffer, clear it, and read keyboard input */
         const int MAXLINE = 8192;
@@ -94,7 +96,14 @@ void echo_client(int fd) {
                 die("fgets error", strerror(errno));
             break;
         }
-
+	if(strcmp("PUT\n", buf) == 0){
+	  printf("Recognized Put and Flag set to 4");
+	  flag = 4;
+	}
+	else if(strcmp("GET\n", buf) == 0){
+	  printf("Recognized Get and flag set to 2");
+	  flag = 2;
+	}
         /* send keystrokes to the server, handling short counts */
         size_t n = strlen(buf);
         size_t nremain = n;
@@ -112,29 +121,34 @@ void echo_client(int fd) {
             bufp += nsofar;
         }
 
-        // read input back from socket (again, handle short counts)
-        bzero(buf, MAXLINE);
-        bufp = buf;
-        nremain = MAXLINE;
-        while (1) {
-            if ((nsofar = read(fd, bufp, nremain)) < 0) {
-                if (errno != EINTR)
-                    die("read error: ", strerror(errno));
-                continue;
-            }
-            // in echo, server should never EOF 
-            if (nsofar == 0)
-                die("Server error: ", "received EOF");
-            bufp += nsofar;
-            nremain -= nsofar;
-            if (*(bufp-1) == '\n') {
-                *bufp = 0;
-                break;
-            }
+	if(count == flag){
+	  // read input back from socket (again, handle short counts)
+	  bzero(buf, MAXLINE);
+	  bufp = buf;
+	  nremain = MAXLINE;
+	  while (1) {
+	    if ((nsofar = read(fd, bufp, nremain)) < 0) {
+	      if (errno != EINTR)
+		die("read error: ", strerror(errno));
+	      continue;
+	    }
+	    // in echo, server should never EOF 
+	    if (nsofar == 0)
+	      die("Server error: ", "received EOF");
+	    bufp += nsofar;
+	    nremain -= nsofar;
+	    if (*(bufp-1) == '\n') {
+	      *bufp = 0;
+	      break;
+	    }
+	  }
+	  
+	  // output the result
+	  printf("%s", buf);
+	  count = 0;
+	  flag = 0;
 	}
-
-        // output the result
-        printf("%s", buf);
+	count++;
     }
 }
 
