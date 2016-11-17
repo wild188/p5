@@ -141,6 +141,9 @@ struct fileBuffer * removeOldest(){
     if(oldest != NULL){
         free(oldest);
     }
+
+    printf("index %i is the oldest\n", i);
+    
     //returns the free pointer to be used for a more recent file
     return oldest;
 }
@@ -150,7 +153,8 @@ struct fileBuffer * getFileBuffer(char * filename){ //returns null if nothing is
     //finds file with the same name
     for(i = 0; i < cacheSize; i++){
         if(cache[i] != NULL && !strcmp(cache[i]->name, filename)){
-            return cache[i];
+	  printf("Found %s in the buffer at %i\n", filename, i); 
+	  return cache[i];
         }
     }
     return NULL;
@@ -184,12 +188,16 @@ void addFileBuffer(struct fileBuffer * myFile){
     if(oldVersion != NULL){             //replaces a file with the same name in the cache
         free(oldVersion);
         oldVersion = myFile;
+	printf("Replaced the older version of %s\n", myFile->name);
     }else if(cacheSize < maxCacheSize){ //adds a new file to the cache
         cache[cacheSize] = myFile;
         cacheSize++;
+	printf("Added %s to the buffer list index %i\n",cache[cacheSize-1]->name, \
+	       cacheSize);
     }else{                              //replaces the oldest file in the cache
         struct fileBuffer * replace  = removeOldest();
         replace = myFile;
+	printf("Replaced oldest file with %s\n", myFile->name);
     }
     updateEvictionScores(myFile);
 }
@@ -239,7 +247,7 @@ int popSize(char *sizeStr, struct request *myRequest){
      return 1;
 }
 
-void response(char * output){
+void response(int connfd, char * output){
   //For GET type = 1
   //For PUT type = 2
   //If OK = 1 then the GET/PUT was successful, OK = 0 if not
@@ -256,7 +264,7 @@ void response(char * output){
 	            nsofar = 0;
             }
         nremain -= nsofar;
-        bufp += nsofar;
+        output += nsofar;
     }
 }
 
@@ -336,6 +344,8 @@ void file_server(int connfd, int lru_size) {
 	  putBuff->contents = strdup(currentFileContents);
 	  addFileBuffer(putBuff);
 	  //now server needs to send to the client OK\n
+	  response(connfd, "OK\n");
+	  requestCount = 0;
 	}
 	else{
 	  printf("could not open the file");
@@ -453,7 +463,7 @@ int main(int argc, char **argv) {
     /* for getopt */
     long opt;
     /* NB: the "part 3" behavior only should happen when lru_size > 0 */
-    int  lru_size = 10;
+    int  lru_size = 3;
     int  port     = 9000;
 
     check_team(argv[0]);
