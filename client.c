@@ -19,6 +19,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <string.h>
 #include "support.h"
 
 /*
@@ -94,94 +95,90 @@ void readServerResponse(int fd, ssize_t nsofar, size_t nremain, char *bufp){
   }
 }
 
-/*
- * echo_client() - this is dummy code to show how to read and write on a
- *                 socket when there can be short counts.  The code
- *                 implements an "echo" client.
- */
-void echo_client(int fd) {
-    // main loop
-  int count = 1;
-  int flag = 0;
-    while (1) {
-        /* set up a buffer, clear it, and read keyboard input */
-        const int MAXLINE = 8192;
-        char buf[MAXLINE];
-        bzero(buf, MAXLINE);
-	//we need to change the fgets b/c transmission from 
-	//   client ends after a NL is detected
-        if (fgets(buf, MAXLINE, stdin) == NULL) {
-            if (ferror(stdin))
-                die("fgets error", strerror(errno));
-            break;
-        }
-	if(strcmp("PUT\n", buf) == 0){
-	  printf("Recognized Put and Flag set to 4");
-	  flag = 4;
-	}
-	else if(strcmp("GET\n", buf) == 0){
-	  printf("Recognized Get and flag set to 2");
-	  flag = 2;
-	}
-        /* send keystrokes to the server, handling short counts */
-        size_t n = strlen(buf);
-        size_t nremain = n;
-        ssize_t nsofar;
-        char *bufp = buf;
-        while (nremain > 0) {
-            if ((nsofar = write(fd, bufp, nremain)) <= 0) {
-                if (errno != EINTR) {
-                    fprintf(stderr, "Write error: %s\n", strerror(errno));
-                    exit(0);
-                }
-                nsofar = 0;
-            }
-            nremain -= nsofar;
-            bufp += nsofar;
-        }
-
-	if(count == flag){
-	  // read input back from socket (again, handle short counts)
-	  bzero(buf, MAXLINE);
-	  bufp = buf;
-	  nremain = MAXLINE;
-	  if(flag == 4){
-	    readServerResponse(fd, nsofar, nremain, bufp);
-	    printf("%s", buf);
-	  }
-	  // output the result
-	  if(flag == 2){
-	    readServerResponse(fd, nsofar, nremain, bufp);
-            printf("%s", buf);
-	    bzero(buf, MAXLINE);
-	    bufp = buf;
-	    nremain = MAXLINE;
-	    readServerResponse(fd, nsofar, nremain, bufp);
-            printf("%s", buf);
-	    bzero(buf, MAXLINE);
-	    bufp = buf;
-	    nremain = MAXLINE;
-	    readServerResponse(fd, nsofar, nremain, bufp);
-            printf("%s", buf);
-	    bzero(buf, MAXLINE);
-	    bufp = buf;
-	    nremain = MAXLINE;
-	    readServerResponse(fd, nsofar, nremain, bufp);
-            printf("%s", buf);
-	  }
-	  count = 0;
-	  flag = 0;
-	}
-	count++;
+void sendRequest(int fd, int type, int step, char *fileName){
+  //send GET\n, type = 1 & step = 1
+  //send fileName if type = 1 & step = 2
+  //send PUT\n, type = 2 & step = 1
+  //send fileName if type = 2 & step = 2
+  //send size if type = 2 & step = 3
+  //send file contents if type = 2 & step = 4
+    
+  /* set up a buffer and clear it */
+  const int MAXLINE = 8192;
+  char buf[MAXLINE];
+  bzero(buf, MAXLINE); 
+  
+  //determine the contents of buffer
+  if(type == 1 && step == 1){
+    strcpy(buf, "GET\n");
+  }
+  else if(step == 2){
+    strcpy(buf, fileName);
+    strcat(buf, "\n");
+  }
+  else if(type == 2 && step == 1){
+      strcpy(buf, "PUT\n");
+  }
+  else if(type == 2 && step == 3){
+    off_t size;
+    struct stat st;
+    if(stat(fileName, &st) == 0){
+      size = st.st_size;
+	sprintf(buf, "%lu", size);
     }
+    else{
+      printf("Error cannot find file");
+      exit(0);
+    }
+  }
+  else if(type == 2 && step == 4){
+      //get file contents and copy it to buf
+    FILE *in;
+    char ch;
+    int index = 0;
+    in = fopen(fileName, "r");
+    if(!in){
+      perror("file does not exist");
+      exit(0);
+    }
+    while((ch = fgetc(in)) != EOF){
+      buf[index] = ch;
+      index++;
+    }
+    fclose(in);
+    }
+  
+  /* send keystrokes to the server, handling short counts */
+  //consider changing strlen
+  size_t n = strlen(buf);
+  size_t nremain = n;
+  ssize_t nsofar;
+  char *bufp = buf;
+  while (nremain > 0) {
+    if ((nsofar = write(fd, bufp, nremain)) <= 0) {
+      if (errno != EINTR) {
+	fprintf(stderr, "Write error: %s\n", strerror(errno));
+	exit(0);
+      }
+      nsofar = 0;
+    }
+    nremain -= nsofar;
+    bufp += nsofar;
+  }
+  
 }
 
 /*
  * put_file() - send a file to the server accessible via the given socket fd
  */
 void put_file(int fd, char *put_name) {
-    /* TODO: implement a proper solution, instead of calling the echo() client */
-    echo_client(fd);
+  printf("got to the put_file");
+  sendRequest(fd, 2, 1, put_name);
+  
+  sendRequest(fd, 2, 2, put_name);
+  sendRequest(fd, 2, 3, put_name);
+  sendRequest(fd, 2, 4, put_name);
+  
 }
 
 /*
@@ -189,10 +186,9 @@ void put_file(int fd, char *put_name) {
  *              fd, and save it according to the save_name
  */
 void get_file(int fd, char *get_name, char *save_name) {
-    /* TODO: implement a proper solution, instead of calling the echo() client */
-    echo_client(fd);
+  sendRequest(fd, 1, 1, save_name);
+  sendRequest(fd, 1, 2, save_name);
 }
-
 /*
  * main() - parse command line, open a socket, transfer a file
  */
