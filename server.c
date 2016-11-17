@@ -353,9 +353,9 @@ void file_server(int connfd, int lru_size) {
 	  fclose(putFile);
 	  //creating a fileBuffer
 	  struct fileBuffer *putBuff = malloc(sizeof(struct fileBuffer));
-	  putBuff->name = myRequest->name;
+	  putBuff->name = strdup(myRequest->name);
 	  putBuff->size = myRequest->size_bytes;
-	  putBuff->contents = currentFileContents;
+	  putBuff->contents = strdup(currentFileContents);
 	  addFileBuffer(putBuff);
 	  //now server needs to send to the client OK\n
 	}
@@ -410,9 +410,9 @@ void file_server(int connfd, int lru_size) {
 	  if(!getBuff){
 	    //does not exist so need to cread a fileBuffer
 	    getBuff = malloc(sizeof(struct fileBuffer));
-	    getBuff->name = myRequest->name;
+	    getBuff->name = strdup(myRequest->name);
 	    getBuff->size = myRequest->size_bytes;
-	    getBuff->contents = currentFileContents;
+	    getBuff->contents = strdup(currentFileContents);
 	    addFileBuffer(getBuff);
 	    //return the OK to the client w/ the getBuff info
 	  }
