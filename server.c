@@ -182,6 +182,7 @@ void addFileBuffer(struct fileBuffer * myFile){
     struct fileBuffer * oldVersion = getFileBuffer(myFile->name);
 
     if(oldVersion != NULL){             //replaces a file with the same name in the cache
+        free(oldVersion);
         oldVersion = myFile;
     }else if(cacheSize < maxCacheSize){ //adds a new file to the cache
         cache[cacheSize] = myFile;
