@@ -239,50 +239,27 @@ int popSize(char *sizeStr, struct request *myRequest){
      return 1;
 }
 
-void response(int connfd, int type, int OK, struct fileBuffer *fb){
+void response(char * output){
   //For GET type = 1
   //For PUT type = 2
   //If OK = 1 then the GET/PUT was successful, OK = 0 if not
   //For a GET request the fb will hold all the data that needs to be 
   //    transfered to the client
 
-  //if is PUT
-  ssize_t nsofar;
-  ssize_t nremain;
-  if(type == 2){
-    if((nsofar = write(connfd, "OK\n", 3)) <= 0){
-      if (errno != EINTR){
-	die("Write error: ", strerror(errno));
-      }
-      nsofar = 0;
+  int nremain = strlen(output);
+  int nsofar = 0;
+    while (nremain > 0) {
+      /* write some data; swallow EINTRs */
+        if ((nsofar = write(connfd, output, nremain)) <= 0) {
+	        if (errno != EINTR)
+	            die("Write error: ", strerror(errno));
+	            nsofar = 0;
+            }
+        nremain -= nsofar;
+        bufp += nsofar;
     }
-    return;
-  }
-  
-  //if GET
-  // append into one string
-  int size = 3;
-  if(type = 1){
-    size += (strlen(fb->name) + 1 + strlen(fb->size) + 1 + strlen(fb->contents));
-    char sendArray[size];
-    
-    
-  }
 }
 
-  nremain = 3;
-  bufp = buf;
-  while (nremain > 0) {
-    /* write some data; swallow EINTRs */
-    if ((nsofar = write(connfd, bufp, nremain)) <= 0) {
-      if (errno != EINTR)
-	die("Write error: ", strerror(errno));
-      nsofar = 0;
-    }
-    nremain -= nsofar;
-    bufp += nsofar;
-  }
-}
 
 /*
  * file_server() - Read a request from a socket, satisfy the request, and
