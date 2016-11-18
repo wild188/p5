@@ -268,6 +268,27 @@ void response(int connfd, char * output){
     }
 }
 
+void makefile(struct request myRequest){
+    FILE *putFile;
+	putFile = fopen(myRequest->name, "w");
+	strcpy(currentFileContents, myRequest->contents);
+	if(putFile != NULL){
+	  int writeErr = fputs(currentFileContents, putFile);
+	  fclose(putFile);
+	  //creating a fileBuffer
+	  struct fileBuffer *putBuff = malloc(sizeof(struct fileBuffer));
+	  putBuff->name = strdup(myRequest->name);
+	  putBuff->size = myRequest->size_bytes;
+	  putBuff->contents = strdup(currentFileContents);
+	  addFileBuffer(putBuff);
+	  //now server needs to send to the client OK\n
+	
+	}
+	else{
+	  printf("could not open the file");
+	  //server needs to send to the client an error message
+	}
+}
 
 /*
  * file_server() - Read a request from a socket, satisfy the request, and
@@ -329,8 +350,9 @@ void file_server(int connfd, int lru_size) {
 	int cmdHIndex = 0;
 	int cmdVIndex = 0;
 	while(index < nsofar){
-	  if(buf[index] == '\n'){
-	    cmdVIndex++;
+	  if(cmdVIndex < 3 && buf[index] == '\n'){
+	    cmd[cmdVIndex][cmdHIndex] = '\0';
+        cmdVIndex++;
 	    index++;
 	    cmdHIndex = 0;
 	    continue;
@@ -340,51 +362,48 @@ void file_server(int connfd, int lru_size) {
 	  index++;
 	}
 
-    if(requestCount == 3){
-        printf("contents of the file: %s\n", bufp);
-	//it is a PUT request so write the contents from bufp to the filename specifies in myRequest
-	
-	//Nate this all you!
-	//write to the currentFileContents
-	//USE MY SKILZZZ I LEARNED IN THE MOUNTAINNSSSSS
+    if(cmdVIndex < 2){
+        //Error
+        printf("Not enough cmds\n");
+        continue;
+    }
 
-	FILE *putFile;
-	putFile = fopen(myRequest->name, "w");
-	strcpy(currentFileContents, buf);
-	if(putFile != NULL){
-	  int writeErr = fputs(currentFileContents, putFile);
-	  fclose(putFile);
-	  //creating a fileBuffer
-	  struct fileBuffer *putBuff = malloc(sizeof(struct fileBuffer));
-	  putBuff->name = strdup(myRequest->name);
-	  putBuff->size = myRequest->size_bytes;
-	  putBuff->contents = strdup(currentFileContents);
-	  addFileBuffer(putBuff);
-	  //now server needs to send to the client OK\n
-	  response(connfd, "OK\n");
-	  requestCount = 0;
-	}
-	else{
-	  printf("could not open the file");
-	  //server needs to send to the client an error message
-	}
-	//*bufp = 0;
-	*(bufp - 1) = '\n';
-    }else if(requestCount == 2){
-      if(myRequest->type == PUT){
-	check = popSize((bufp - nsofar), myRequest);
-	if(check){
-	  requestCount++;
-	  *bufp = 0;
-	  printf("size is %d\n", myRequest->size_bytes);
-	  currentFileContents = malloc(myRequest->size_bytes);
-	}
-	else{
-	  *bufp = 0;
-	  continue;
-	}
-      }
-      else{
+    //request count 0 read cmd
+    printf("print left nut\nbufp is: %s\n", cmd[0]);
+    check = popType(cmd[0], myRequest);
+    if(check){ 
+	    *bufp = 0;
+        printf("requestType is %d\n", myRequest->type);
+    }else{
+        continue;
+    }
+
+    //request count 1 get file name
+    printf("Filename: %s\n", cmd[1]);
+    check = popName(cmd[1], myRequest);
+    if(check){
+	    *bufp = 0;
+	    printf("name is %s\n", myRequest->name);
+    }
+
+    //request count 2 file size 
+    if(myRequest->type == PUT){
+	check = popSize(cmd[2], myRequest);
+        if(check){
+            requestCount++;
+            *bufp = 0;
+            printf("size is %d\n", myRequest->size_bytes);
+            currentFileContents = malloc(myRequest->size_bytes);
+        }
+        else{
+            *bufp = 0;
+            continue;
+        }
+        myRequest->contents = strdup(cmd[3]);
+        makefile(myRequest);
+        response(connfd, "OK\n");
+        continue;
+    }else{
 	//it is a get request
 
     //call getFileBuffer if it gives you a real fileBuffer just use that
@@ -400,6 +419,7 @@ void file_server(int connfd, int lru_size) {
 	  while((ch = fgetc(getFile)) != EOF){
 	    size++;
 	  }
+      myRequest->size_bytes = size;
 	  fclose(getFile);
 	  currentFileContents = malloc(sizeof(char) * size);
 	  getFile = fopen(myRequest->name, "r");
@@ -421,33 +441,42 @@ void file_server(int connfd, int lru_size) {
 	    addFileBuffer(getBuff);
 	    //return the OK to the client w/ the getBuff info
 	  }
-	  else{
-	    //return the OK to the client w/ the getBuff info returned from cache
-	  }
+      response(connfd, "OK\n");
+      response(connfd, getBuff->name);
+      response(connfd, getBuff->size);
+      response(connfd, getBuff->contents);
+
+
         }
         else{
           printf("could not open the file");
           //server needs to send to the client an error message         
         }
 	requestCount = 0;
+
+
+
 	break;
-      }
+    }
+
+    if(requestCount == 3){
+        printf("contents of the file: %s\n", bufp);
+	//it is a PUT request so write the contents from bufp to the filename specifies in myRequest
+	
+	//Nate this all you!
+	//write to the currentFileContents
+	//USE MY SKILZZZ I LEARNED IN THE MOUNTAINNSSSSS
+
+	
+	//*bufp = 0;
+	*(bufp - 1) = '\n';
+    }else if(requestCount == 2){
+      
+      
     }else if(requestCount == 1){
-      printf("Filename: %s\n", bufp - nsofar);
-      check = popName((bufp - nsofar), myRequest);
-      if(check){
-	requestCount++;
-	*bufp = 0;
-	printf("name is %s\n", myRequest->name);
-      }
+      
     }else if(requestCount == 0){
-      printf("print left nut\nbufp is: %s\n", (bufp - nsofar));
-      check = popType((bufp - nsofar), myRequest);
-      if(check){ 
-	requestCount++;
-	*bufp = 0;
-	printf("requestType is %d\n", myRequest->type);
-      }     
+           
     }
     
     *bufp = 0; //not sure what this does
