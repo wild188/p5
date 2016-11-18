@@ -221,8 +221,26 @@ void put_file(int fd, char *put_name) {
  *              fd, and save it according to the save_name
  */
 void get_file(int fd, char *get_name, char *save_name) {
-    sendRequest(fd, 1, 1, save_name);
-    sendRequest(fd, 1, 2, save_name);
+  char writeArr[8192];  
+  sprintf(writeArr, "%s\n%s\n$", "GET", get_name);
+  size_t n = strlen(writeArr);
+  size_t nremain1 = n;
+  ssize_t nsofar1;
+  char *writep = writeArr;
+  while (nremain1 > 0) {
+    if ((nsofar1 = write(fd, writep, nremain1)) <= 0) {
+      if (errno != EINTR) {
+	fprintf(stderr, "Write error: %s\n", strerror(errno));
+        exit(0);
+      }
+      nsofar1 = 0;
+    }
+    nremain1 -= nsofar1;
+    writep += nsofar1;
+  }
+
+
+  //billys code
     
     const int MAXLINE = 8192;
     char      buf[MAXLINE];   /* a place to store text from the client */
@@ -231,10 +249,10 @@ void get_file(int fd, char *get_name, char *save_name) {
     char *bufp = buf;              /* current pointer into buffer */
     ssize_t nremain = MAXLINE;     /* max characters we can still read */
     size_t nsofar;             
-	  printf("Waiting for next line on %d\n", connfd);
+	  printf("Waiting for next line on %d\n", fd);
         while (1) {
             /* read some data; swallow EINTRs */
-            if ((nsofar = read(connfd, bufp, nremain)) < 0) {
+            if ((nsofar = read(fd, bufp, nremain)) < 0) {
                 if (errno != EINTR)
                     die("read error: ", strerror(errno));
 		            printf("recieved and EINTR\n");
@@ -286,7 +304,7 @@ void get_file(int fd, char *get_name, char *save_name) {
     if(!strcmp(cmd[0], "OK")){
       success = 1;
     }
-    printf("%s\n"cmd[0]);
+    printf("%s\n", cmd[0]);
   }else{
     printf("No response read.\n");
   }
@@ -297,10 +315,10 @@ void get_file(int fd, char *get_name, char *save_name) {
 
   if(cmdVIndex >= 3 && success){
     FILE *myFile;
-    if((myFile = fopen(savename, "w")) != NULL){
+    if((myFile = fopen(save_name, "w")) != NULL){
       int i;
       for(i = 0; i < sizeInt; i++){
-        fputc(cmd[3], myFile);
+        fputc(cmd[3][i], myFile);
       }
     }else{
       printf("Failed to open file for write\n");

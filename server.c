@@ -476,12 +476,9 @@ void file_server(int connfd, int lru_size) {
 	    addFileBuffer(getBuff);
 	    //return the OK to the client w/ the getBuff info
 	  }
-      response(connfd, "OK\n");
-      response(connfd, getBuff->name);
-      char sizeSTR[10];
-      sprintf(sizeSTR, "%i", getBuff->size);
+      char sizeSTR[8192];
+      sprintf(sizeSTR, "%s\n%s\n%i\n%s\n", "OK", getBuff->name, getBuff->size, getBuff->contents);
       response(connfd, sizeSTR);
-      response(connfd, getBuff->contents);
 
 
         }
