@@ -124,7 +124,7 @@ void sendRequest(int fd, int type, int step, char *fileName){
     struct stat st;
     if(stat(fileName, &st) == 0){
       size = st.st_size;
-	sprintf(buf, "%lu", size);
+	sprintf(buf, "%lu\n", size);
     }
     else{
       printf("Error cannot find file");

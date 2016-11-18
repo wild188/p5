@@ -323,6 +323,23 @@ void file_server(int connfd, int lru_size) {
 	
 	printf("contents of bufp: %s\ncontents of buf: %s", bufp, buf);
 	//continue;
+	char cmd[10][MAXLINE];
+	bzero(cmd, MAXLINE);
+	int index = 0;
+	int cmdHIndex = 0;
+	int cmdVIndex = 0;
+	while(index < nsofar){
+	  if(buf[index] == '\n'){
+	    cmdVIndex++;
+	    index++;
+	    cmdHIndex = 0;
+	    continue;
+	  }
+	  cmd[cmdIndex][cmdHIndex];
+	  cmdHIndex++;
+	  index++;
+	}
+
     if(requestCount == 3){
         printf("contents of the file: %s\n", bufp);
 	//it is a PUT request so write the contents from bufp to the filename specifies in myRequest
