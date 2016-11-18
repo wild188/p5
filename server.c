@@ -204,10 +204,10 @@ void addFileBuffer(struct fileBuffer * myFile){
 
 int popType(char* cmd, struct request *myRequest){
   printf("\ncommand is %s\n", cmd);  
-  if(!strcmp(cmd, "PUT\n")){
+  if(!strcmp(cmd, "PUT")){
         myRequest->type = PUT;
         return 1;
-    }else if(!strcmp(cmd, "GET\n")){
+    }else if(!strcmp(cmd, "GET")){
         myRequest->type = GET;
         return 1;
     }
@@ -268,18 +268,17 @@ void response(int connfd, char * output){
     }
 }
 
-void makefile(struct request myRequest){
+void makefile(struct request* myRequest, char * contents){
     FILE *putFile;
 	putFile = fopen(myRequest->name, "w");
-	strcpy(currentFileContents, myRequest->contents);
 	if(putFile != NULL){
-	  int writeErr = fputs(currentFileContents, putFile);
+	  int writeErr = fputs(contents, putFile);
 	  fclose(putFile);
 	  //creating a fileBuffer
 	  struct fileBuffer *putBuff = malloc(sizeof(struct fileBuffer));
 	  putBuff->name = strdup(myRequest->name);
 	  putBuff->size = myRequest->size_bytes;
-	  putBuff->contents = strdup(currentFileContents);
+	  putBuff->contents = strdup(contents);
 	  addFileBuffer(putBuff);
 	  //now server needs to send to the client OK\n
 	
@@ -357,7 +356,9 @@ void file_server(int connfd, int lru_size) {
 	    cmdHIndex = 0;
 	    continue;
 	  }
-	  cmd[cmdIndex][cmdHIndex];
+	  
+	  //cmd[cmdVIndex][cmdHIndex]; remember the alamo
+	  cmd[cmdVIndex][cmdHIndex] = buf[index];
 	  cmdHIndex++;
 	  index++;
 	}
@@ -399,8 +400,8 @@ void file_server(int connfd, int lru_size) {
             *bufp = 0;
             continue;
         }
-        myRequest->contents = strdup(cmd[3]);
-        makefile(myRequest);
+        //myRequest->contents = strdup(cmd[3]);
+        makefile(myRequest, cmd[3]);
         response(connfd, "OK\n");
         continue;
     }else{
@@ -443,7 +444,9 @@ void file_server(int connfd, int lru_size) {
 	  }
       response(connfd, "OK\n");
       response(connfd, getBuff->name);
-      response(connfd, getBuff->size);
+      char sizeSTR[10];
+      sprintf(sizeSTR, "%i", getBuff->size);
+      response(connfd, sizeSTR);
       response(connfd, getBuff->contents);
 
 
