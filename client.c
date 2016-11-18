@@ -221,8 +221,91 @@ void put_file(int fd, char *put_name) {
  *              fd, and save it according to the save_name
  */
 void get_file(int fd, char *get_name, char *save_name) {
-  //sendRequest(fd, 1, 1, save_name);
-  //sendRequest(fd, 1, 2, save_name);
+    sendRequest(fd, 1, 1, save_name);
+    sendRequest(fd, 1, 2, save_name);
+    
+    const int MAXLINE = 8192;
+    char      buf[MAXLINE];   /* a place to store text from the client */
+    bzero(buf, MAXLINE);
+      /* read from socket, recognizing that we may get short counts */
+    char *bufp = buf;              /* current pointer into buffer */
+    ssize_t nremain = MAXLINE;     /* max characters we can still read */
+    size_t nsofar;             
+	  printf("Waiting for next line on %d\n", connfd);
+        while (1) {
+            /* read some data; swallow EINTRs */
+            if ((nsofar = read(connfd, bufp, nremain)) < 0) {
+                if (errno != EINTR)
+                    die("read error: ", strerror(errno));
+		            printf("recieved and EINTR\n");
+		            continue;
+            }
+	          printf("intial buffer: %s\n", bufp);
+            /* end service to this client on EOF */
+            if (nsofar == 0) {
+                fprintf(stderr, "received EOF\n");
+                return;
+            }
+            /* update pointer for next bit of reading */
+            bufp += nsofar;
+            nremain -= nsofar;
+            if (*(bufp-1) == '\n') {
+	              break;
+	    }
+	   
+	    printf("got to end of while loop\n");
+	    
+	}
+	
+	printf("contents of bufp: %s\ncontents of buf: %s", bufp, buf);
+  char cmd[10][MAXLINE];
+	bzero(cmd, MAXLINE);
+	int index = 0;
+	int cmdHIndex = 0;
+	int cmdVIndex = 0;
+  int readSoFar = 0;
+	while(index < nsofar){
+	  if(cmdVIndex < 3 && buf[index] == '\n'){
+	    cmd[cmdVIndex][cmdHIndex] = '\0';
+        cmdVIndex++;
+	    index++;
+	    cmdHIndex = 0;
+	    continue;
+	  }
+	  if(cmdVIndex == 3){
+      readSoFar++;
+    }
+	  //cmd[cmdVIndex][cmdHIndex]; remember the alamo
+	  cmd[cmdVIndex][cmdHIndex] = buf[index];
+	  cmdHIndex++;
+	  index++;
+	}
+
+  int success = 0;
+  if(cmdVIndex >= 3){
+    if(!strcmp(cmd[0], "OK")){
+      success = 1;
+    }
+    printf("%s\n"cmd[0]);
+  }else{
+    printf("No response read.\n");
+  }
+  int sizeInt;
+  if(!sscanf(cmd[2], "%d", &sizeInt)){
+      success = 0;
+  }
+
+  if(cmdVIndex >= 3 && success){
+    FILE *myFile;
+    if((myFile = fopen(savename, "w")) != NULL){
+      int i;
+      for(i = 0; i < sizeInt; i++){
+        fputc(cmd[3], myFile);
+      }
+    }else{
+      printf("Failed to open file for write\n");
+    }
+  }
 }
 /*
  * main() - parse command line, open a socket, transfer a file
