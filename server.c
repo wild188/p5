@@ -302,7 +302,6 @@ void file_server(int connfd, int lru_size) {
 
     /* sample code: continually read lines from the client, and send them
        back to the client immediately */
-  int requestCount = 0;
   int check;
   struct request *myRequest = malloc(sizeof(struct request));
   char * currentFileContents;
@@ -391,7 +390,6 @@ void file_server(int connfd, int lru_size) {
     if(myRequest->type == PUT){
 	check = popSize(cmd[2], myRequest);
         if(check){
-            requestCount++;
             *bufp = 0;
             printf("size is %d\n", myRequest->size_bytes);
             currentFileContents = malloc(myRequest->size_bytes);
@@ -455,34 +453,10 @@ void file_server(int connfd, int lru_size) {
           printf("could not open the file");
           //server needs to send to the client an error message         
         }
-	requestCount = 0;
-
-
-
 	break;
     }
-
-    if(requestCount == 3){
-        printf("contents of the file: %s\n", bufp);
-	//it is a PUT request so write the contents from bufp to the filename specifies in myRequest
-	
-	//Nate this all you!
-	//write to the currentFileContents
-	//USE MY SKILZZZ I LEARNED IN THE MOUNTAINNSSSSS
-
-	
-	//*bufp = 0;
-	*(bufp - 1) = '\n';
-    }else if(requestCount == 2){
-      
-      
-    }else if(requestCount == 1){
-      
-    }else if(requestCount == 0){
-           
-    }
     
-    *bufp = 0; //not sure what this does
+    //*bufp = 0; //not sure what this does
     
     //This is the code that echos the client input back to it
 
