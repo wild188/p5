@@ -141,8 +141,6 @@ struct fileBuffer * removeOldest(){
     if(oldest != NULL){
         free(oldest);
     }
-
-    printf("index %i is the oldest\n", i);
     
     //returns the free pointer to be used for a more recent file
     return oldest;
@@ -152,8 +150,7 @@ struct fileBuffer * getFileBuffer(char * filename){ //returns null if nothing is
     int i;
     //finds file with the same name
     for(i = 0; i < cacheSize; i++){
-        if(cache[i] != NULL && !strcmp(cache[i]->name, filename)){
-	  printf("Found %s in the buffer at %i\n", filename, i); 
+        if(cache[i] != NULL && !strcmp(cache[i]->name, filename)){ 
 	  return cache[i];
         }
     }
@@ -188,16 +185,12 @@ void addFileBuffer(struct fileBuffer * myFile){
     if(oldVersion != NULL){             //replaces a file with the same name in the cache
         free(oldVersion);
         oldVersion = myFile;
-	printf("Replaced the older version of %s\n", myFile->name);
     }else if(cacheSize < maxCacheSize){ //adds a new file to the cache
         cache[cacheSize] = myFile;
         cacheSize++;
-	printf("Added %s to the buffer list index %i\n",cache[cacheSize-1]->name, \
-	       cacheSize);
     }else{                              //replaces the oldest file in the cache
         struct fileBuffer * replace  = removeOldest();
         replace = myFile;
-	printf("Replaced oldest file with %s\n", myFile->name);
     }
     updateEvictionScores(myFile);
 }
@@ -274,7 +267,7 @@ int makefile(struct request* myRequest, char * contents, int readSoFar, int conn
     //printf("Reading %i more of %i already have:\n%s\n", expected - readSoFar, expected, contents);
     sleep(2);
     char * contentsp = contents + readSoFar;
-    int readCur = 0;
+    int readCur= 0;
     //printf("Waiting for next line on %d\n", connfd);              
     while (1) {
       /* read some data; swallow EINTRs */
@@ -301,7 +294,7 @@ int makefile(struct request* myRequest, char * contents, int readSoFar, int conn
 
   }
 
-  //printf("Making File\n"); 
+  printf("contents: %s\n", contents); 
   FILE *putFile;
   putFile = fopen(myRequest->name, "w");
 	if(putFile != NULL){
@@ -398,7 +391,6 @@ void file_server(int connfd, int lru_size) {
 
     if(cmdVIndex < 2){
         //Error
-        printf("Not enough cmds\n");
         continue;
     }
 
@@ -436,7 +428,7 @@ void file_server(int connfd, int lru_size) {
         }
         //myRequest->contents = strdup(cmd[3]);
         makefile(myRequest, cmd[3], contentsRead, connfd);
-        response(connfd, "OK\n");
+        response(connfd, "OK\n$");
         continue;
     }else{
 	//it is a get request

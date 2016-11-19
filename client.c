@@ -172,7 +172,6 @@ void readServerResponse(int fd, ssize_t nsofar, size_t nremain, char *bufp){
  * put_file() - send a file to the server accessible via the given socket fd
  */
 void put_file(int fd, char *put_name) {
-  printf("got to the put_file");
   char buf[8192];
   off_t size;
   struct stat st;
@@ -197,7 +196,7 @@ void put_file(int fd, char *put_name) {
     index++;
   }
   fclose(in);
-  sprintf(buf, "%s\n%s\n%ul\n%s\n$", "PUT", put_name, size, temp);
+  sprintf(buf, "%s\n%s\n%ul\n%s$", "PUT", put_name, size, temp);
   size_t n = strlen(buf);
   size_t nremain = n;
   ssize_t nsofar;
@@ -213,7 +212,37 @@ void put_file(int fd, char *put_name) {
     nremain -= nsofar;
     bufp += nsofar;
   }
-  
+
+  const int MAXLINE = 8192;
+  char      buf1[MAXLINE];   /* a place to store text from the client \
+			     */
+  bzero(buf1, MAXLINE);
+  /* read from socket, recognizing that we may get short counts */
+  char *bufp1 = buf1;              /* current pointer into buffer */
+  ssize_t nremain1 = MAXLINE;     /* max characters we can still read \
+				  */
+  size_t nsofar1;
+  while (1) {
+    /* read some data; swallow EINTRs */
+    if ((nsofar1 = read(fd, bufp1, nremain1)) < 0) {
+      if (errno != EINTR)
+	die("read error: ", strerror(errno));
+      printf("recieved and EINTR\n");
+      continue;
+    }
+    /* end service to this client on EOF */
+    if (nsofar1 == 0) {
+      fprintf(stderr, "received EOF\n");
+      return;
+    }
+    bufp1 += nsofar1;
+    nremain1 -= nsofar1;
+    if (*(bufp1-1) == '$') {
+      break;
+    }
+  }
+  printf("%s", buf1);
+  return;
 }
 
 /*
@@ -249,7 +278,6 @@ void get_file(int fd, char *get_name, char *save_name) {
     char *bufp = buf;              /* current pointer into buffer */
     ssize_t nremain = MAXLINE;     /* max characters we can still read */
     size_t nsofar;             
-	  printf("Waiting for next line on %d\n", fd);
         while (1) {
             /* read some data; swallow EINTRs */
             if ((nsofar = read(fd, bufp, nremain)) < 0) {
@@ -258,7 +286,6 @@ void get_file(int fd, char *get_name, char *save_name) {
 		            printf("recieved and EINTR\n");
 		            continue;
             }
-	          printf("intial buffer: %s\n", bufp);
             /* end service to this client on EOF */
             if (nsofar == 0) {
                 fprintf(stderr, "received EOF\n");
@@ -271,11 +298,9 @@ void get_file(int fd, char *get_name, char *save_name) {
 	              break;
 	    }
 	   
-	    printf("got to end of while loop\n");
 	    
 	}
 	
-	printf("contents of bufp: %s\ncontents of buf: %s", bufp, buf);
   char cmd[10][MAXLINE];
 	bzero(cmd, MAXLINE);
 	int index = 0;
@@ -298,13 +323,12 @@ void get_file(int fd, char *get_name, char *save_name) {
 	  cmdHIndex++;
 	  index++;
 	}
-
-  int success = 0;
+	printf("%s\n", cmd[0]);
+	int success = 0;
   if(cmdVIndex >= 3){
     if(!strcmp(cmd[0], "OK")){
       success = 1;
     }
-    printf("%s\n", cmd[0]);
   }else{
     printf("No response read.\n");
   }
