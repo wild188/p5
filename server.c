@@ -192,7 +192,7 @@ void addFileBuffer(struct fileBuffer * myFile){
     }else if(cacheSize < maxCacheSize){ //adds a new file to the cache
         cache[cacheSize] = myFile;
         cacheSize++;
-	//printf("Added %s to the buffer list index %i\n",cache[cacheSize-1]->name, \
+	printf("Added %s to the buffer list index %i\n",cache[cacheSize-1]->name, \
 	       cacheSize);
     }else{                              //replaces the oldest file in the cache
         struct fileBuffer * replace  = removeOldest();
@@ -271,7 +271,7 @@ void response(int connfd, char * output){
 int makefile(struct request* myRequest, char * contents, int readSoFar, int connfd){
   int expected = myRequest->size_bytes;
   if(readSoFar < expected){
-    printf("Reading %i more of %i already have:\n%s\n", expected - readSoFar, expected, contents);
+    //printf("Reading %i more of %i already have:\n%s\n", expected - readSoFar, expected, contents);
     sleep(2);
     char * contentsp = contents + readSoFar;
     int readCur = 0;
@@ -301,7 +301,7 @@ int makefile(struct request* myRequest, char * contents, int readSoFar, int conn
 
   }
 
-  printf("Making File\n"); 
+  //printf("Making File\n"); 
   FILE *putFile;
   putFile = fopen(myRequest->name, "w");
 	if(putFile != NULL){
@@ -370,7 +370,7 @@ void file_server(int connfd, int lru_size) {
 	    }
 	    
 	}
-	printf("server recieved: %s\n", buf);
+	//printf("server recieved: %s\n", buf);
 	
 	//continue;
 	char cmd[10][MAXLINE];
@@ -405,7 +405,7 @@ void file_server(int connfd, int lru_size) {
     //request count 0 read cmd
     int temp = 0;
     while(temp <= cmdVIndex){
-      printf("Command number %i: %s\n", temp, cmd[temp]);
+      //printf("Command number %i: %s\n", temp, cmd[temp]);
       temp++;
     }
 
