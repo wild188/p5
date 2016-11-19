@@ -95,7 +95,7 @@ void readServerResponse(int fd, ssize_t nsofar, size_t nremain, char *bufp){
   }
 }
 
-void sendRequest(int fd, int type, int step, char *fileName){
+/*void sendRequest(int fd, int type, int step, char *fileName){
   //send GET\n, type = 1 & step = 1
   //send fileName if type = 1 & step = 2
   //send PUT\n, type = 2 & step = 1
@@ -103,7 +103,7 @@ void sendRequest(int fd, int type, int step, char *fileName){
   //send size if type = 2 & step = 3
   //send file contents if type = 2 & step = 4
     
-  /* set up a buffer and clear it */
+   set up a buffer and clear it
   const int MAXLINE = 8192;
   char buf[MAXLINE];
   bzero(buf, MAXLINE); 
@@ -146,9 +146,9 @@ void sendRequest(int fd, int type, int step, char *fileName){
       index++;
     }
     fclose(in);
-    }
+  }
   
-  /* send keystrokes to the server, handling short counts */
+// send keystrokes to the server, handling short counts
   //consider changing strlen
   size_t n = strlen(buf);
   size_t nremain = n;
@@ -166,18 +166,53 @@ void sendRequest(int fd, int type, int step, char *fileName){
     bufp += nsofar;
   }
   
-}
+}*/
 
 /*
  * put_file() - send a file to the server accessible via the given socket fd
  */
 void put_file(int fd, char *put_name) {
   printf("got to the put_file");
-  sendRequest(fd, 2, 1, put_name);
-  
-  sendRequest(fd, 2, 2, put_name);
-  sendRequest(fd, 2, 3, put_name);
-  sendRequest(fd, 2, 4, put_name);
+  char buf[8192];
+  off_t size;
+  struct stat st;
+  if(stat(put_name, &st) == 0){
+    size = st.st_size;
+  }
+  else{
+    printf("Error cannot find file");
+    exit(0);
+  }
+  char temp[size];
+  FILE *in;
+  char ch;
+  int index = 0;
+  in = fopen(put_name, "r");
+  if(!in){
+    perror("file does not exist");
+    exit(0);
+  }
+  while((ch = fgetc(in)) != EOF){
+    temp[index] = ch;
+    index++;
+  }
+  fclose(in);
+  sprintf(buf, "%s\n%s\n%ul\n%s\n$", "PUT", put_name, size, temp);
+  size_t n = strlen(buf);
+  size_t nremain = n;
+  ssize_t nsofar;
+  char *bufp = buf;
+  while (nremain > 0) {
+    if ((nsofar = write(fd, bufp, nremain)) <= 0) {
+      if (errno != EINTR) {
+        fprintf(stderr, "Write error: %s\n", strerror(errno));
+        exit(0);
+      }
+      nsofar = 0;
+    }
+    nremain -= nsofar;
+    bufp += nsofar;
+  }
   
 }
 
@@ -186,8 +221,109 @@ void put_file(int fd, char *put_name) {
  *              fd, and save it according to the save_name
  */
 void get_file(int fd, char *get_name, char *save_name) {
-  sendRequest(fd, 1, 1, save_name);
-  sendRequest(fd, 1, 2, save_name);
+  char writeArr[8192];  
+  sprintf(writeArr, "%s\n%s\n$", "GET", get_name);
+  size_t n = strlen(writeArr);
+  size_t nremain1 = n;
+  ssize_t nsofar1;
+  char *writep = writeArr;
+  while (nremain1 > 0) {
+    if ((nsofar1 = write(fd, writep, nremain1)) <= 0) {
+      if (errno != EINTR) {
+	fprintf(stderr, "Write error: %s\n", strerror(errno));
+        exit(0);
+      }
+      nsofar1 = 0;
+    }
+    nremain1 -= nsofar1;
+    writep += nsofar1;
+  }
+
+
+  //billys code
+    
+    const int MAXLINE = 8192;
+    char      buf[MAXLINE];   /* a place to store text from the client */
+    bzero(buf, MAXLINE);
+      /* read from socket, recognizing that we may get short counts */
+    char *bufp = buf;              /* current pointer into buffer */
+    ssize_t nremain = MAXLINE;     /* max characters we can still read */
+    size_t nsofar;             
+	  printf("Waiting for next line on %d\n", fd);
+        while (1) {
+            /* read some data; swallow EINTRs */
+            if ((nsofar = read(fd, bufp, nremain)) < 0) {
+                if (errno != EINTR)
+                    die("read error: ", strerror(errno));
+		            printf("recieved and EINTR\n");
+		            continue;
+            }
+	          printf("intial buffer: %s\n", bufp);
+            /* end service to this client on EOF */
+            if (nsofar == 0) {
+                fprintf(stderr, "received EOF\n");
+                return;
+            }
+            /* update pointer for next bit of reading */
+            bufp += nsofar;
+            nremain -= nsofar;
+            if (*(bufp-1) == '\n') {
+	              break;
+	    }
+	   
+	    printf("got to end of while loop\n");
+	    
+	}
+	
+	printf("contents of bufp: %s\ncontents of buf: %s", bufp, buf);
+  char cmd[10][MAXLINE];
+	bzero(cmd, MAXLINE);
+	int index = 0;
+	int cmdHIndex = 0;
+	int cmdVIndex = 0;
+  int readSoFar = 0;
+	while(index < nsofar){
+	  if(cmdVIndex < 3 && buf[index] == '\n'){
+	    cmd[cmdVIndex][cmdHIndex] = '\0';
+        cmdVIndex++;
+	    index++;
+	    cmdHIndex = 0;
+	    continue;
+	  }
+	  if(cmdVIndex == 3){
+      readSoFar++;
+    }
+	  //cmd[cmdVIndex][cmdHIndex]; remember the alamo
+	  cmd[cmdVIndex][cmdHIndex] = buf[index];
+	  cmdHIndex++;
+	  index++;
+	}
+
+  int success = 0;
+  if(cmdVIndex >= 3){
+    if(!strcmp(cmd[0], "OK")){
+      success = 1;
+    }
+    printf("%s\n", cmd[0]);
+  }else{
+    printf("No response read.\n");
+  }
+  int sizeInt;
+  if(!sscanf(cmd[2], "%d", &sizeInt)){
+      success = 0;
+  }
+
+  if(cmdVIndex >= 3 && success){
+    FILE *myFile;
+    if((myFile = fopen(save_name, "w")) != NULL){
+      int i;
+      for(i = 0; i < sizeInt; i++){
+        fputc(cmd[3][i], myFile);
+      }
+    }else{
+      printf("Failed to open file for write\n");
+    }
+  }
 }
 /*
  * main() - parse command line, open a socket, transfer a file

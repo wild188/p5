@@ -192,7 +192,7 @@ void addFileBuffer(struct fileBuffer * myFile){
     }else if(cacheSize < maxCacheSize){ //adds a new file to the cache
         cache[cacheSize] = myFile;
         cacheSize++;
-	printf("Added %s to the buffer list index %i\n",cache[cacheSize-1]->name, \
+	//printf("Added %s to the buffer list index %i\n",cache[cacheSize-1]->name, \
 	       cacheSize);
     }else{                              //replaces the oldest file in the cache
         struct fileBuffer * replace  = removeOldest();
@@ -203,7 +203,7 @@ void addFileBuffer(struct fileBuffer * myFile){
 }
 
 int popType(char* cmd, struct request *myRequest){
-  printf("\ncommand is %s\n", cmd);  
+  //printf("\ncommand is %s\n", cmd);  
   if(!strcmp(cmd, "PUT")){
         myRequest->type = PUT;
         return 1;
@@ -268,9 +268,42 @@ void response(int connfd, char * output){
     }
 }
 
-void makefile(struct request* myRequest, char * contents){
-    FILE *putFile;
-	putFile = fopen(myRequest->name, "w");
+int makefile(struct request* myRequest, char * contents, int readSoFar, int connfd){
+  int expected = myRequest->size_bytes;
+  if(readSoFar < expected){
+    printf("Reading %i more of %i already have:\n%s\n", expected - readSoFar, expected, contents);
+    sleep(2);
+    char * contentsp = contents + readSoFar;
+    int readCur = 0;
+    //printf("Waiting for next line on %d\n", connfd);              
+    while (1) {
+      /* read some data; swallow EINTRs */
+      if ((readCur = read(connfd, contentsp, (expected - readSoFar)) < 0)) {
+	if (errno != EINTR)
+	  die("read error: ", strerror(errno));
+	printf("recieved and EINTR\n");
+	continue;
+      }
+      /* end service to this client on EOF */
+      if (readCur == 0) {
+	fprintf(stderr, "received no contents\n");
+	//return;
+      }
+	
+	readSoFar += readCur;
+	/* update pointer for next bit of reading */
+      contentsp += readSoFar;
+      if (expected <= readSoFar) {
+	break;
+      }
+
+    }
+
+  }
+
+  printf("Making File\n"); 
+  FILE *putFile;
+  putFile = fopen(myRequest->name, "w");
 	if(putFile != NULL){
 	  int writeErr = fputs(contents, putFile);
 	  fclose(putFile);
@@ -281,12 +314,13 @@ void makefile(struct request* myRequest, char * contents){
 	  putBuff->contents = strdup(contents);
 	  addFileBuffer(putBuff);
 	  //now server needs to send to the client OK\n
-	
+	  return 1;
 	}
 	else{
 	  printf("could not open the file");
 	  //server needs to send to the client an error message
 	}
+	return 1;
 }
 
 /*
@@ -314,7 +348,7 @@ void file_server(int connfd, int lru_size) {
         char *bufp = buf;              /* current pointer into buffer */
         ssize_t nremain = MAXLINE;     /* max characters we can still read */
         size_t nsofar;             
-	printf("Waiting for next line on %d\n", connfd);
+	//printf("Waiting for next line on %d\n", connfd);
         while (1) {
             /* read some data; swallow EINTRs */
             if ((nsofar = read(connfd, bufp, nremain)) < 0) {
@@ -323,7 +357,6 @@ void file_server(int connfd, int lru_size) {
 		printf("recieved and EINTR\n");
 		continue;
             }
-	    printf("intial buffer: %s\n", bufp);
             /* end service to this client on EOF */
             if (nsofar == 0) {
                 fprintf(stderr, "received EOF\n");
@@ -332,30 +365,31 @@ void file_server(int connfd, int lru_size) {
             /* update pointer for next bit of reading */
             bufp += nsofar;
             nremain -= nsofar;
-            if (*(bufp-1) == '\n') {
+            if (*(bufp-1) == '$') {
 	      break;
 	    }
-	   
-	    printf("got to end of while loop\n");
 	    
 	}
+	printf("server recieved: %s\n", buf);
 	
-	printf("contents of bufp: %s\ncontents of buf: %s", bufp, buf);
 	//continue;
 	char cmd[10][MAXLINE];
-	bzero(cmd, MAXLINE);
+	//bzero(cmd, MAXLINE);
 	int index = 0;
 	int cmdHIndex = 0;
 	int cmdVIndex = 0;
+	int contentsRead = 0;
 	while(index < nsofar){
 	  if(cmdVIndex < 3 && buf[index] == '\n'){
 	    cmd[cmdVIndex][cmdHIndex] = '\0';
-        cmdVIndex++;
+	    cmdVIndex++;
 	    index++;
 	    cmdHIndex = 0;
 	    continue;
 	  }
-	  
+	  if(cmdVIndex == 3){
+	    contentsRead++;
+	  }
 	  //cmd[cmdVIndex][cmdHIndex]; remember the alamo
 	  cmd[cmdVIndex][cmdHIndex] = buf[index];
 	  cmdHIndex++;
@@ -369,21 +403,24 @@ void file_server(int connfd, int lru_size) {
     }
 
     //request count 0 read cmd
-    printf("print left nut\nbufp is: %s\n", cmd[0]);
+    int temp = 0;
+    while(temp <= cmdVIndex){
+      printf("Command number %i: %s\n", temp, cmd[temp]);
+      temp++;
+    }
+
     check = popType(cmd[0], myRequest);
     if(check){ 
 	    *bufp = 0;
-        printf("requestType is %d\n", myRequest->type);
     }else{
         continue;
     }
 
     //request count 1 get file name
-    printf("Filename: %s\n", cmd[1]);
     check = popName(cmd[1], myRequest);
     if(check){
 	    *bufp = 0;
-	    printf("name is %s\n", myRequest->name);
+	    //printf("name is %s\n", myRequest->name);
     }
 
     //request count 2 file size 
@@ -391,7 +428,6 @@ void file_server(int connfd, int lru_size) {
 	check = popSize(cmd[2], myRequest);
         if(check){
             *bufp = 0;
-            printf("size is %d\n", myRequest->size_bytes);
             currentFileContents = malloc(myRequest->size_bytes);
         }
         else{
@@ -399,7 +435,7 @@ void file_server(int connfd, int lru_size) {
             continue;
         }
         //myRequest->contents = strdup(cmd[3]);
-        makefile(myRequest, cmd[3]);
+        makefile(myRequest, cmd[3], contentsRead, connfd);
         response(connfd, "OK\n");
         continue;
     }else{
@@ -440,12 +476,9 @@ void file_server(int connfd, int lru_size) {
 	    addFileBuffer(getBuff);
 	    //return the OK to the client w/ the getBuff info
 	  }
-      response(connfd, "OK\n");
-      response(connfd, getBuff->name);
-      char sizeSTR[10];
-      sprintf(sizeSTR, "%i", getBuff->size);
+      char sizeSTR[8192];
+      sprintf(sizeSTR, "%s\n%s\n%i\n%s\n", "OK", getBuff->name, getBuff->size, getBuff->contents);
       response(connfd, sizeSTR);
-      response(connfd, getBuff->contents);
 
 
         }
