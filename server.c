@@ -256,11 +256,15 @@ int popSize(char *sizeStr, struct request *myRequest){
 int checkSum(char *cs, struct request *myRequest, char *contents){
   //Nate use your mountain skills
   char hash[256];
+  char temp[32];
   MD5(contents, myRequest->size_bytes, hash);
-  if(!strcmp(hash, cs)){
-    printf("the MD5 hash is: %s", hash);
+  sprintf(temp, "%x", hash);
+  printf("The contents of contents is:\n %s\nServer hash:\n %s\nclient hash:\n %s\n", contents, temp, cs);
+  if(!strcmp(temp, cs)){
+    printf("the MD5 hash is: %s\n and matched", hash);
     return 1;
   }
+  printf("The hash is %s but it didn't match\n", hash);
   return 0;
 }
 
@@ -287,9 +291,9 @@ void response(int connfd, char * output){
 
 int makefile(struct request* myRequest, char * contents, int readSoFar, int connfd){
   int expected = myRequest->size_bytes;
-  if(readSoFar < expected){
+  if(readSoFar < expected && 0){
     //printf("Reading %i more of %i already have:\n%s\n", expected - readSoFar, expected, contents);
-    sleep(2);
+    // sleep(2);
     char * contentsp = contents + readSoFar;
     int readCur= 0;
     //printf("Waiting for next line on %d\n", connfd);              
@@ -322,7 +326,7 @@ int makefile(struct request* myRequest, char * contents, int readSoFar, int conn
   FILE *putFile;
   putFile = fopen(myRequest->name, "w");
 	if(putFile != NULL){
-	  printf("the contents are", contents);
+	  //printf("the contents are", contents);
 	  int writeErr = fputs(contents, putFile);
 	  fclose(putFile);
 	  //creating a fileBuffer
@@ -399,7 +403,17 @@ void file_server(int connfd, int lru_size) {
 	int contentsRead = 0;
     int dynamicRead = 3;
 	while(index < nsofar){
+	  /* if(cmdVIndex == dynamicRead - 1 && myRequest->checkSum){
+            if(cmdHIndex == 32){
+              cmdVIndex++;
+              index++;
+              cmdHIndex = 0;
+              cmd[cmdVIndex][cmdHIndex] = '\0';
+              continue;
+            }
+          }else*/
 	  if(cmdVIndex < dynamicRead && buf[index] == '\n'){
+	    
 	    cmd[cmdVIndex][cmdHIndex] = '\0';
 	    cmdVIndex++;
 	    index++;
@@ -410,12 +424,15 @@ void file_server(int connfd, int lru_size) {
             if(check){ 
 	            *bufp = 0;
             }else{
+	      printf("Type error %s not valid\n", cmd[0]);
                 continue;
             }
         }
-	    continue;
+	
+	continue;
 	  }
-	  if(cmdVIndex == 3){
+	  
+	  if(cmdVIndex == dynamicRead){
 	    contentsRead++;
 	  }
 	  //cmd[cmdVIndex][cmdHIndex]; remember the alamo
@@ -427,6 +444,7 @@ void file_server(int connfd, int lru_size) {
 
     if(cmdVIndex < 2){
         //Error
+      printf("not enough arguments sent\n");
         continue;
     }
 
@@ -450,20 +468,21 @@ void file_server(int connfd, int lru_size) {
     if(myRequest->type == PUT){
       check = popSize(cmd[2], myRequest);
       cmd[dynamicRead][myRequest->size_bytes - 1] = '\0';
-      printf("size of the file is: %i\n", myRequest->size_bytes);
+      //printf("size of the file is: %i\n", myRequest->size_bytes);
         if(check){
             *bufp = 0;
             currentFileContents = malloc(myRequest->size_bytes);
         }
         else{
             *bufp = 0;
+	    printf("Size not valid\n");
             continue;
         }
         //myRequest->contents = strdup(cmd[3]);
         makefile(myRequest, cmd[dynamicRead], contentsRead, connfd);
             if(myRequest->checkSum){
 	      if(checkSum(cmd[3], myRequest, cmd[4])) response(connfd, "OKC\n$");
-	      else response(connfd, "DONDE ESTA LOS DROGAS?!?!");
+	      else response(connfd, "DONDE ESTA LOS DROGAS?!?!$");
 	    } else{
 	      response(connfd, "OK\n$");
 	    }

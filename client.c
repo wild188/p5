@@ -125,12 +125,16 @@ void put_file(int fd, char *put_name, int checkSum) {
   fclose(in);
 
   if(checkSum){
-    char cs[256];
-    MD5(cs, index, temp);
-    sprintf(buf, "%s\n%s\n%ul\n%s\n%s$", "PUTC", put_name, size, cs, temp);
+    unsigned char cs[32];
+    printf("Temp before md5 is: %s", temp);
+    MD5(temp, index, cs);
+    printf("Temp is: %s\ncs is: %x\n", temp, cs);
+    sprintf(buf, "%s\n%s\n%i\n%x\n%s$", "PUTC", put_name, size, cs, temp);
   }else{
-    sprintf(buf, "%s\n%s\n%ul\n%s$", "PUT", put_name, size, temp);
+    sprintf(buf, "%s\n%s\n%i\n%s$", "PUT", put_name, size, temp);
   }
+
+  printf("client sending: %s\n", buf);
 
   
   size_t n = strlen(buf);
@@ -302,7 +306,7 @@ int main(int argc, char **argv) {
 
     /* parse the command-line options. */
     /* TODO: add additional opt flags */
-    while ((opt = getopt(argc, argv, "hs:P:G:S:p:c:")) != -1) {
+    while ((opt = getopt(argc, argv, "hs:P:G:S:p:c")) != -1) {
         switch(opt) {
           case 'h': help(argv[0]); break;
           case 's': server = optarg; break;
