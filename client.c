@@ -95,83 +95,10 @@ void readServerResponse(int fd, ssize_t nsofar, size_t nremain, char *bufp){
   }
 }
 
-/*void sendRequest(int fd, int type, int step, char *fileName){
-  //send GET\n, type = 1 & step = 1
-  //send fileName if type = 1 & step = 2
-  //send PUT\n, type = 2 & step = 1
-  //send fileName if type = 2 & step = 2
-  //send size if type = 2 & step = 3
-  //send file contents if type = 2 & step = 4
-    
-   set up a buffer and clear it
-  const int MAXLINE = 8192;
-  char buf[MAXLINE];
-  bzero(buf, MAXLINE); 
-  
-  //determine the contents of buffer
-  if(type == 1 && step == 1){
-    strcpy(buf, "GET\n");
-  }
-  else if(step == 2){
-    strcpy(buf, fileName);
-    strcat(buf, "\n");
-  }
-  else if(type == 2 && step == 1){
-      strcpy(buf, "PUT\n");
-  }
-  else if(type == 2 && step == 3){
-    off_t size;
-    struct stat st;
-    if(stat(fileName, &st) == 0){
-      size = st.st_size;
-	sprintf(buf, "%lu\n", size);
-    }
-    else{
-      printf("Error cannot find file");
-      exit(0);
-    }
-  }
-  else if(type == 2 && step == 4){
-      //get file contents and copy it to buf
-    FILE *in;
-    char ch;
-    int index = 0;
-    in = fopen(fileName, "r");
-    if(!in){
-      perror("file does not exist");
-      exit(0);
-    }
-    while((ch = fgetc(in)) != EOF){
-      buf[index] = ch;
-      index++;
-    }
-    fclose(in);
-  }
-  
-// send keystrokes to the server, handling short counts
-  //consider changing strlen
-  size_t n = strlen(buf);
-  size_t nremain = n;
-  ssize_t nsofar;
-  char *bufp = buf;
-  while (nremain > 0) {
-    if ((nsofar = write(fd, bufp, nremain)) <= 0) {
-      if (errno != EINTR) {
-	fprintf(stderr, "Write error: %s\n", strerror(errno));
-	exit(0);
-      }
-      nsofar = 0;
-    }
-    nremain -= nsofar;
-    bufp += nsofar;
-  }
-  
-}*/
-
 /*
  * put_file() - send a file to the server accessible via the given socket fd
  */
-void put_file(int fd, char *put_name) {
+void put_file(int fd, char *put_name, int checkSum) {
   char buf[8192];
   off_t size;
   struct stat st;
@@ -196,7 +123,16 @@ void put_file(int fd, char *put_name) {
     index++;
   }
   fclose(in);
-  sprintf(buf, "%s\n%s\n%ul\n%s$", "PUT", put_name, size, temp);
+
+  if(checkSum){
+    char cs[256];
+    MD5(cs, index, temp);
+    sprintf(buf, "%s\n%s\n%ul\n%s\n%s$", "PUTC", put_name, size, cs, temp);
+  }else{
+    sprintf(buf, "%s\n%s\n%ul\n%s$", "PUT", put_name, size, temp);
+  }
+
+  
   size_t n = strlen(buf);
   size_t nremain = n;
   ssize_t nsofar;
@@ -249,7 +185,7 @@ void put_file(int fd, char *put_name) {
  * get_file() - get a file from the server accessible via the given socket
  *              fd, and save it according to the save_name
  */
-void get_file(int fd, char *get_name, char *save_name) {
+void get_file(int fd, char *get_name, char *save_name, int checkSum) {
   char writeArr[8192];  
   sprintf(writeArr, "%s\n%s\n$", "GET", get_name);
   size_t n = strlen(writeArr);
@@ -360,12 +296,13 @@ int main(int argc, char **argv) {
     char *get_name = NULL;
     int   port;
     char *save_name = NULL;
+    int checkSum = 0;
 
     check_team(argv[0]);
 
     /* parse the command-line options. */
     /* TODO: add additional opt flags */
-    while ((opt = getopt(argc, argv, "hs:P:G:S:p:")) != -1) {
+    while ((opt = getopt(argc, argv, "hs:P:G:S:p:c:")) != -1) {
         switch(opt) {
           case 'h': help(argv[0]); break;
           case 's': server = optarg; break;
@@ -373,6 +310,7 @@ int main(int argc, char **argv) {
           case 'G': get_name = optarg; break;
           case 'S': save_name = optarg; break;
           case 'p': port = atoi(optarg); break;
+          case 'c': checkSum = 1; break;
         }
     }
 
@@ -381,9 +319,9 @@ int main(int argc, char **argv) {
 
     /* put or get, as appropriate */
     if (put_name)
-        put_file(fd, put_name);
+        put_file(fd, put_name, checkSum);
     else
-        get_file(fd, get_name, save_name);
+        get_file(fd, get_name, save_name, checkSum);
 
     /* close the socket */
     int rc;
