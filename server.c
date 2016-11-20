@@ -23,6 +23,7 @@ const int GET = 2;
 
 struct request{
   int type;
+  int checkSum;
   char* name;
   int size_bytes;
 };
@@ -201,9 +202,19 @@ int popType(char* cmd, struct request *myRequest){
   //printf("\ncommand is %s\n", cmd);  
   if(!strcmp(cmd, "PUT")){
         myRequest->type = PUT;
+        myRequest->checkSum = 0;
         return 1;
     }else if(!strcmp(cmd, "GET")){
         myRequest->type = GET;
+        myRequest->checkSum = 0;
+        return 1;
+    }else if(!strcmp(cmd, "PUTC")){
+        myRequest->type = PUT;
+        myRequest->checkSum = 1;
+        return 1;
+    }else if(!strcmp(cmd, "GETC")){
+        myRequest->type = GET;
+        myRequest->checkSum = 1;
         return 1;
     }
     return 0;
@@ -240,6 +251,11 @@ int popSize(char *sizeStr, struct request *myRequest){
      }
      myRequest->size_bytes = sizeInt;
      return 1;
+}
+
+int checkSum(){
+    //Nate use your mountain skills
+    return;
 }
 
 void response(int connfd, char * output){
@@ -430,7 +446,16 @@ void file_server(int connfd, int lru_size) {
         }
         //myRequest->contents = strdup(cmd[3]);
         makefile(myRequest, cmd[3], contentsRead, connfd);
-        response(connfd, "OK\n$");
+        if(checkSum()){
+            if(myRequest->checkSum){
+                response(connfd, "OKC\n$");
+            }else{
+                response(connfd, "OK\n$");
+            }
+        }else{
+            //print error
+        }
+        
         continue;
     }else{
 	//it is a get request
