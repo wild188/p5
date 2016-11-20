@@ -255,11 +255,13 @@ int popSize(char *sizeStr, struct request *myRequest){
 
 int checkSum(char *cs, struct request *myRequest, char *contents){
   //Nate use your mountain skills
-  char hash[256];
+  unsigned char hash[256];
+  bzero(hash, 256);
   char temp[32];
-  MD5(contents, myRequest->size_bytes, hash);
+  printf("Contents as hex:\n%x", contents);
+  MD5(contents, myRequest->size_bytes + 1, hash);
   sprintf(temp, "%x", hash);
-  printf("The contents of contents is:\n %s\nServer hash:\n %s\nclient hash:\n %s\n", contents, temp, cs);
+  printf("The contents of contents is:\n%s\nServer hash:\n %s\nclient hash:\n %s\n", contents, temp, cs);
   if(!strcmp(temp, cs)){
     printf("the MD5 hash is: %s\n and matched", hash);
     return 1;
@@ -467,7 +469,7 @@ void file_server(int connfd, int lru_size) {
     //request count 2 file size 
     if(myRequest->type == PUT){
       check = popSize(cmd[2], myRequest);
-      cmd[dynamicRead][myRequest->size_bytes - 1] = '\0';
+      cmd[dynamicRead][myRequest->size_bytes] = '\0';
       //printf("size of the file is: %i\n", myRequest->size_bytes);
         if(check){
             *bufp = 0;

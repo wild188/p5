@@ -125,8 +125,9 @@ void put_file(int fd, char *put_name, int checkSum) {
   fclose(in);
 
   if(checkSum){
-    unsigned char cs[32];
-    printf("Temp before md5 is: %s", temp);
+    unsigned char cs[256];
+    bzero(cs, 256);
+    printf("Temp before md5 in hex is:\n%x", temp);
     MD5(temp, index, cs);
     printf("Temp is: %s\ncs is: %x\n", temp, cs);
     sprintf(buf, "%s\n%s\n%i\n%x\n%s$", "PUTC", put_name, size, cs, temp);
