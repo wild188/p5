@@ -94,7 +94,7 @@ int open_server_socket(int port) {
  *                     multi-threaded server.
  */
 void handle_requests(int listenfd, void (*service_function)(int, int), int param) {
-    while (1) {
+  while (1) {
         /* block until we get a connection */
         struct sockaddr_in clientaddr;
         int clientlen = sizeof(clientaddr);
@@ -183,14 +183,16 @@ void addFileBuffer(struct fileBuffer * myFile){
     struct fileBuffer * oldVersion = getFileBuffer(myFile->name);
 
     if(oldVersion != NULL){             //replaces a file with the same name in the cache
-        free(oldVersion);
+      //free(oldVersion);
+	
         oldVersion = myFile;
     }else if(cacheSize < maxCacheSize){ //adds a new file to the cache
         cache[cacheSize] = myFile;
         cacheSize++;
     }else{                              //replaces the oldest file in the cache
         struct fileBuffer * replace  = removeOldest();
-        replace = myFile;
+	replace = malloc(sizeof(struct fileBuffer));
+	replace = myFile;
     }
     updateEvictionScores(myFile);
 }
@@ -323,7 +325,7 @@ int makefile(struct request* myRequest, char * contents, int readSoFar, int conn
 void file_server(int connfd, int lru_size) {
     /* TODO: set up a few static variables here to manage the LRU cache of
        files */
-       lruCacheSetup(lru_size);
+  //lruCacheSetup(lru_size);
     /* TODO: replace following sample code with code that satisfies the
        requirements of the assignment */
 
@@ -511,7 +513,7 @@ int main(int argc, char **argv) {
     /* for getopt */
     long opt;
     /* NB: the "part 3" behavior only should happen when lru_size > 0 */
-    int  lru_size = 3;
+    int  lru_size = 2;
     int  port     = 9000;
 
     check_team(argv[0]);
@@ -525,7 +527,7 @@ int main(int argc, char **argv) {
           case 'p': port = atoi(optarg); break;
         }
     }
-
+    lruCacheSetup(lru_size);
     /* open a socket, and start handling requests */
     int fd = open_server_socket(port);
     handle_requests(fd, file_server, lru_size);
