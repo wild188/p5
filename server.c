@@ -123,17 +123,19 @@ void handle_requests(int listenfd, void (*service_function)(int, int), int param
 }
 
 //finds and frees the oldest cached file
-struct fileBuffer * removeOldest(){
+int removeOldest(){
     struct fileBuffer * oldest = NULL;
     int high = 0;
     int i = 0;
+    int oldIndex = 0;
     while(i < cacheSize){
         if(cache[i] == NULL){
-            return cache[i];
+            return i;
         }else{
             if(cache[i]->eviction_score > high){
                 high = cache[i]->eviction_score;
                 oldest = cache[i];
+                oldIndex = i;
             }
         }
 
@@ -144,7 +146,7 @@ struct fileBuffer * removeOldest(){
     }
     
     //returns the free pointer to be used for a more recent file
-    return oldest;
+    return oldIndex;
 }
 
 struct fileBuffer * getFileBuffer(char * filename){ //returns null if nothing is found
@@ -185,15 +187,15 @@ void addFileBuffer(struct fileBuffer * myFile){
 
     if(oldVersion != NULL){             //replaces a file with the same name in the cache
       //free(oldVersion);
-	
+      //oldVersion = malloc(sizeof(struct fileBuffer *));
         oldVersion = myFile;
     }else if(cacheSize < maxCacheSize){ //adds a new file to the cache
         cache[cacheSize] = myFile;
         cacheSize++;
     }else{                              //replaces the oldest file in the cache
-        struct fileBuffer * replace  = removeOldest();
-	replace = malloc(sizeof(struct fileBuffer));
-	replace = myFile;
+        int oldestI = removeOldest();
+	    cache[oldestI] = malloc(sizeof(struct fileBuffer));
+	    cache[oldestI] = myFile;
     }
     updateEvictionScores(myFile);
 }
