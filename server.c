@@ -253,9 +253,15 @@ int popSize(char *sizeStr, struct request *myRequest){
      return 1;
 }
 
-int checkSum(){
-    //Nate use your mountain skills
-    return;
+int checkSum(char *cs, struct request *myRequest, char *contents){
+  //Nate use your mountain skills
+  char hash[256];
+  MD5(contents, myRequest->size_bytes, hash);
+  if(!strcmp(hash, cs)){
+    printf("the MD5 hash is: %s", hash);
+    return 1;
+  }
+  return 0;
 }
 
 void response(int connfd, char * output){
@@ -316,6 +322,7 @@ int makefile(struct request* myRequest, char * contents, int readSoFar, int conn
   FILE *putFile;
   putFile = fopen(myRequest->name, "w");
 	if(putFile != NULL){
+	  printf("the contents are", contents);
 	  int writeErr = fputs(contents, putFile);
 	  fclose(putFile);
 	  //creating a fileBuffer
@@ -392,14 +399,14 @@ void file_server(int connfd, int lru_size) {
 	int contentsRead = 0;
     int dynamicRead = 3;
 	while(index < nsofar){
-	  if(cmdVIndex < 3 && buf[index] == '\n'){
+	  if(cmdVIndex < dynamicRead && buf[index] == '\n'){
 	    cmd[cmdVIndex][cmdHIndex] = '\0';
 	    cmdVIndex++;
 	    index++;
 	    cmdHIndex = 0;
         if(cmdVIndex == 1){
             check = popType(cmd[0], myRequest);
-            dynamicRead++;
+	    if(myRequest->checkSum) dynamicRead++;
             if(check){ 
 	            *bufp = 0;
             }else{
@@ -416,6 +423,7 @@ void file_server(int connfd, int lru_size) {
 	  cmdHIndex++;
 	  index++;
 	}
+       
 
     if(cmdVIndex < 2){
         //Error
@@ -440,7 +448,9 @@ void file_server(int connfd, int lru_size) {
 
     //request count 2 file size 
     if(myRequest->type == PUT){
-	check = popSize(cmd[2], myRequest);
+      check = popSize(cmd[2], myRequest);
+      cmd[dynamicRead][myRequest->size_bytes - 1] = '\0';
+      printf("size of the file is: %i\n", myRequest->size_bytes);
         if(check){
             *bufp = 0;
             currentFileContents = malloc(myRequest->size_bytes);
@@ -450,16 +460,13 @@ void file_server(int connfd, int lru_size) {
             continue;
         }
         //myRequest->contents = strdup(cmd[3]);
-        makefile(myRequest, cmd[3], contentsRead, connfd);
-        if(checkSum()){
+        makefile(myRequest, cmd[dynamicRead], contentsRead, connfd);
             if(myRequest->checkSum){
-                response(connfd, "OKC\n$");
-            }else{
-                response(connfd, "OK\n$");
-            }
-        }else{
-            //print error
-        }
+	      if(checkSum(cmd[3], myRequest, cmd[4])) response(connfd, "OKC\n$");
+	      else response(connfd, "DONDE ESTA LOS DROGAS?!?!");
+	    } else{
+	      response(connfd, "OK\n$");
+	    }
         
         continue;
     }else{
