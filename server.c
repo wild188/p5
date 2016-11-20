@@ -390,12 +390,22 @@ void file_server(int connfd, int lru_size) {
 	int cmdHIndex = 0;
 	int cmdVIndex = 0;
 	int contentsRead = 0;
+    int dynamicRead = 3;
 	while(index < nsofar){
 	  if(cmdVIndex < 3 && buf[index] == '\n'){
 	    cmd[cmdVIndex][cmdHIndex] = '\0';
 	    cmdVIndex++;
 	    index++;
 	    cmdHIndex = 0;
+        if(cmdVIndex == 1){
+            check = popType(cmd[0], myRequest);
+            dynamicRead++;
+            if(check){ 
+	            *bufp = 0;
+            }else{
+                continue;
+            }
+        }
 	    continue;
 	  }
 	  if(cmdVIndex == 3){
@@ -419,12 +429,7 @@ void file_server(int connfd, int lru_size) {
       temp++;
     }
 
-    check = popType(cmd[0], myRequest);
-    if(check){ 
-	    *bufp = 0;
-    }else{
-        continue;
-    }
+    
 
     //request count 1 get file name
     check = popName(cmd[1], myRequest);
