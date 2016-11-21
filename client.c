@@ -245,10 +245,10 @@ void put_file(int fd, char *put_name, int checkSum) {
     printf("Temp before md5 in hex is:\n%x", temp);
     MD5(temp, index, cs);
     printf("Temp is: %s\ncs is: %x\n", temp, cs);
-    sprintf(buf, "%s\n%s\n%i\n%x\n%s$", "PUTC", put_name, size, cs, temp);
+    sprintf(buf, "%s\n%s\n%i\n%x\n%s%s", "PUTC", put_name, size, cs, temp, EOT);
   }else{
     encryptedSize = encryptData(temp, size, encrypted);
-    sprintf(buf, "%s\n%s\n%i\n%s$", "PUT", put_name, encryptedSize, encrypted);
+    sprintf(buf, "%s\n%s\n%i\n%s%s", "PUT", put_name, encryptedSize, encrypted, EOT);
   }
 
   printf("client sending: %s\n", buf);
@@ -294,10 +294,11 @@ void put_file(int fd, char *put_name, int checkSum) {
     }
     bufp1 += nsofar1;
     nremain1 -= nsofar1;
-    if (*(bufp1-1) == '$') {
+    if (!strcmp(bufp - strlen(EOT), EOT)) {
       break;
     }
   }
+  bzero((bufp - strlen(EOT)), strlen(EOT));
   printf("%s", buf1);
   return;
 }
@@ -308,7 +309,7 @@ void put_file(int fd, char *put_name, int checkSum) {
  */
 void get_file(int fd, char *get_name, char *save_name, int checkSum) {
   char writeArr[8192];  
-  sprintf(writeArr, "%s\n%s\n$", "GET", get_name);
+  sprintf(writeArr, "%s\n%s\n%s", "GET", get_name, EOT);
   size_t n = strlen(writeArr);
   size_t nremain1 = n;
   ssize_t nsofar1;
