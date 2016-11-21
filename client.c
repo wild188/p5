@@ -27,8 +27,9 @@
  */
 
 char *EOT = "SUCKA MY BAWLS TWO TIME!";
+int encryptFlag;
 
-char *public_key = "-----BEGIN PUBLIC KEY-----\n"
+/*char *public_key = "-----BEGIN PUBLIC KEY-----\n"
 "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwMu7BZF451FjUXYNr323\n"
 "aeeaCW2a7s6eHHs8Gz5qgQ/zDegub6is3jwdTZJyGcRcN1DxKQsLcOa3F18KSiCk\n"
 "yzIWjNV4YH7GdV7Ke2qLjcQUs7wktGUKyPYJmDWGYv/QN0Sbbol9IbeLjSBHUt16\n"
@@ -64,7 +65,7 @@ char *private_key = "-----BEGIN RSA PRIVATE KEY-----\n"
 "Q06ErQKBgHzXwrSRWppsQGdxSrU1Ynwg0bIirfi2N8zyHgFutQzdkDXY5N0gRG7a\n"
 "Xz8GFJecE8Goz8Mw2NigtBC4EystXievCwR3EztDyU5PgvEQV7d+0GLKtCG6QFqC\n"
 "gZKlwzSf9rLhfXYCrWgqg7ZXsiaADQePw+fU2dudERxmg3gokBFL\n"
-  "-----END RSA PRIVATE KEY-----\n";
+"-----END RSA PRIVATE KEY-----\n";*/
 
 
 void help(char *progname) {
@@ -77,6 +78,8 @@ void help(char *progname) {
     printf("  -s    server info (IP or hostname)\n");
     printf("  -p    port on which to contact server\n");
     printf("  -S    for GETs, name to use when saving file locally\n");
+    printf("  -c    c is the flag for implementing a checksum\n");
+    printf("  -e    e is the flag for encryption\n");
 }
 
 /*
@@ -137,60 +140,18 @@ void readServerResponse(int fd, ssize_t nsofar, size_t nremain, char *bufp){
   }
 }
 
-/*int encryptData(char *fileContents, int size, char* encryptedData){
-  //Encrypt with private Key
-  //Decrypt with public Key
-  char privateKey[]="-----BEGIN RSA PRIVATE KEY-----\n"\
-"MIIEowIBAAKCAQEAy8Dbv8prpJ/0kKhlGeJYozo2t60EG8L0561g13R29LvMR5hy\n"\
-"vGZlGJpmn65+A4xHXInJYiPuKzrKUnApeLZ+vw1HocOAZtWK0z3r26uA8kQYOKX9\n"\
-"Qt/DbCdvsF9wF8gRK0ptx9M6R13NvBxvVQApfc9jB9nTzphOgM4JiEYvlV8FLhg9\n"\
-"yZovMYd6Wwf3aoXK891VQxTr/kQYoq1Yp+68i6T4nNq7NWC+UNVjQHxNQMQMzU6l\n"\
-"WCX8zyg3yH88OAQkUXIXKfQ+NkvYQ1cxaMoVPpY72+eVthKzpMeyHkBn7ciumk5q\n"\
-"gLTEJAfWZpe4f4eFZj/Rc8Y8Jj2IS5kVPjUywQIDAQABAoIBADhg1u1Mv1hAAlX8\n"\
-"omz1Gn2f4AAW2aos2cM5UDCNw1SYmj+9SRIkaxjRsE/C4o9sw1oxrg1/z6kajV0e\n"\
-"N/t008FdlVKHXAIYWF93JMoVvIpMmT8jft6AN/y3NMpivgt2inmmEJZYNioFJKZG\n"\
-"X+/vKYvsVISZm2fw8NfnKvAQK55yu+GRWBZGOeS9K+LbYvOwcrjKhHz66m4bedKd\n"\
-"gVAix6NE5iwmjNXktSQlJMCjbtdNXg/xo1/G4kG2p/MO1HLcKfe1N5FgBiXj3Qjl\n"\
-"vgvjJZkh1as2KTgaPOBqZaP03738VnYg23ISyvfT/teArVGtxrmFP7939EvJFKpF\n"\
-"1wTxuDkCgYEA7t0DR37zt+dEJy+5vm7zSmN97VenwQJFWMiulkHGa0yU3lLasxxu\n"\
-"m0oUtndIjenIvSx6t3Y+agK2F3EPbb0AZ5wZ1p1IXs4vktgeQwSSBdqcM8LZFDvZ\n"\
-"uPboQnJoRdIkd62XnP5ekIEIBAfOp8v2wFpSfE7nNH2u4CpAXNSF9HsCgYEA2l8D\n"\
-"JrDE5m9Kkn+J4l+AdGfeBL1igPF3DnuPoV67BpgiaAgI4h25UJzXiDKKoa706S0D\n"\
-"4XB74zOLX11MaGPMIdhlG+SgeQfNoC5lE4ZWXNyESJH1SVgRGT9nBC2vtL6bxCVV\n"\
-"WBkTeC5D6c/QXcai6yw6OYyNNdp0uznKURe1xvMCgYBVYYcEjWqMuAvyferFGV+5\n"\
-"nWqr5gM+yJMFM2bEqupD/HHSLoeiMm2O8KIKvwSeRYzNohKTdZ7FwgZYxr8fGMoG\n"\
-"PxQ1VK9DxCvZL4tRpVaU5Rmknud9hg9DQG6xIbgIDR+f79sb8QjYWmcFGc1SyWOA\n"\
-"SkjlykZ2yt4xnqi3BfiD9QKBgGqLgRYXmXp1QoVIBRaWUi55nzHg1XbkWZqPXvz1\n"\
-"I3uMLv1jLjJlHk3euKqTPmC05HoApKwSHeA0/gOBmg404xyAYJTDcCidTg6hlF96\n"\
-"ZBja3xApZuxqM62F6dV4FQqzFX0WWhWp5n301N33r0qR6FumMKJzmVJ1TA8tmzEF\n"\
-"yINRAoGBAJqioYs8rK6eXzA8ywYLjqTLu/yQSLBn/4ta36K8DyCoLNlNxSuox+A5\n"\
-"w6z2vEfRVQDq4Hm4vBzjdi3QfYLNkTiTqLcvgWZ+eX44ogXtdTDO7c+GeMKWz4XX\n"\
-"uJSUVL5+CVjKLjZEJ6Qc2WZLl94xSwL71E41H4YciVnSCQxVc4Jw\n"\
-    "-----END RSA PRIVATE KEY-----\n";
-  RSA *tempRSA = createRSA(privateKey, 1);
-  int encryptedLength;
-  char *encrypted;
-  FILE *pubKey;
-  int padding = RSA_PKCS1_PADDING;
-  //pubKey = fopen("private.pem", "r");
-  //tempRSA = PEM_read_RSAPrivateKey(pubKey, &rsa, NULL, NULL);
-  // printf("temp RSA is")
-  encryptedLength = RSA_private_encrypt(size, fileContents,encryptedData, tempRSA, padding);
-  fclose(pubKey);
-  return encryptedLength;
-}*/
- 
-
-/*
- * put_file() - send a file to the server accessible via the given socket fd
- */
 int encryptData(char *fileContents, int size, char* encryptedData){
+  char ch = 'a';
+  char *public_key;
+  int index = 0;
+  FILE *in = fopen("public.pem", "r");
+  while((ch = fgetc(in)) != EOF){
+    public_key[index] = ch;
+    index++;
+  }
   BIO *bio;
   bio = BIO_new_mem_buf((void*)public_key, (int)strlen(public_key));
   RSA *rsa_publickey = PEM_read_bio_RSA_PUBKEY(bio, NULL, 0, NULL);
-  BIO_free(bio);
-  bio = BIO_new_mem_buf((void*)private_key, (int)strlen(private_key));
-  RSA *rsa_privatekey = PEM_read_bio_RSAPrivateKey(bio, NULL, 0, NULL);
   BIO_free(bio);
   
   int maxSize = RSA_size(rsa_publickey);
@@ -247,8 +208,13 @@ void put_file(int fd, char *put_name, int checkSum) {
     printf("Temp is: %s\ncs is: %x\n", temp, cs);
     sprintf(buf, "%s\n%s\n%i\n%x\n%s%s", "PUTC", put_name, size, cs, temp, EOT);
   }else{
-    encryptedSize = encryptData(temp, size, encrypted);
-    sprintf(buf, "%s\n%s\n%i\n%s%s", "PUT", put_name, encryptedSize, encrypted, EOT);
+    if(encryptFlag){
+      encryptedSize = encryptData(temp, size, encrypted);
+      sprintf(buf, "%s\n%s\n%i\n%s%s", "PUT", put_name, encryptedSize, encrypted, EOT);
+    }
+    else{
+      sprintf(buf, "%s\n%s\n%i\n%s%s", "PUT", put_name, size, temp, EOT);
+    }
   }
 
   printf("client sending: %s\n", buf);
@@ -394,75 +360,45 @@ void get_file(int fd, char *get_name, char *save_name, int checkSum) {
   if(!sscanf(cmd[2], "%d", &sizeInt)){
       success = 0;
   }
-  printf("cmd[3] is: %s\n", cmd[3]);
-  BIO *bio = BIO_new_mem_buf((void*)private_key, (int)strlen(private_key));
-  RSA *rsa_privatekey = PEM_read_bio_RSAPrivateKey(bio, NULL, 0, NULL);
-  BIO_free(bio);
-  unsigned char *decrypted = (unsigned char *) malloc(1000);
+  if(encryptedFlag){
+    char ch = 'a';
+    char *private_key;
+    int index1 = 0;
+    FILE *in = fopen("private.pem", "r");
+    while((ch = fgetc(in)) != EOF){
+      private_key[index1] = ch;
+      index1++;
+    }
+    BIO *bio = BIO_new_mem_buf((void*)private_key, (int)strlen(private_key));
+    RSA *rsa_privatekey = PEM_read_bio_RSAPrivateKey(bio, NULL, 0, NULL);
+    BIO_free(bio);
+    unsigned char *decrypted = (unsigned char *) malloc(1000);
 
-  // Fill buffer with decrypted data                                    
-  RSA_private_decrypt(sizeInt, cmd[3], decrypted, rsa_privatekey, RSA_PKCS1_PADDING);
+    // Fill buffer with decrypted data                                    
+    RSA_private_decrypt(sizeInt, cmd[3], decrypted, rsa_privatekey, RSA_PKCS1_PADDING);
+  }
 
-  printf("decrypted is: %s\n", decrypted);
-  printf("sizeInt is: %i\n", sizeInt);
   if(cmdVIndex >= 3 && success){
     FILE *myFile;
     if((myFile = fopen(save_name, "w")) != NULL){
       int i;
       for(i = 0; i < sizeInt; i++){
-        fputc(decrypted[i], myFile);
+	if(encryptedFlag){
+	  fputc(decrypted[i], myFile);
+	}
+	else{
+	  fputc(cmd[3][i], myFile);
+	}
       }
     }else{
       printf("Failed to open file for write\n");
     }
   }
 }
+
 /*
  * main() - parse command line, open a socket, transfer a file
  */
-
-/*void genKey(){
-  int returnVal = 0;
-  RSA *rsa = NULL;
-  BIGNUM *bNum = NULL;
-  BIO *publicKey = NULL, *privateKey = NULL;
-  int size = 2048;
-  unsigned long x = RSA_F4;
-
-  // 1. generate rsa key
-  bNum = BN_new();
-  returnVal = BN_set_word(bNum, x);
-  // if(ret != 1){
-  // goto free_all;
-  // }
- 
-  rsa = RSA_new();
-  returnVal = RSA_generate_key_ex(rsa, size, bNum, NULL);
-  // if(ret != 1){
-  // goto free_all;
-  // }
- 
-  // 2. save public key
-  publicKey = BIO_new_file("public.pem", "w+");
-  returnVal = PEM_write_bio_RSAPublicKey(publicKey, rsa);
-  //if(ret != 1){
-  //goto free_all;
-  //}
- 
-  // 3. save private key
-  privateKey = BIO_new_file("private.pem", "w+");
-  returnVal = PEM_write_bio_RSAPrivateKey(privateKey, rsa, NULL, NULL, 0, NULL, NULL);
- 
-  // 4. free
-  //free_all:
- 
-  //BIO_free_all(bp_public);
-  //BIO_free_all(bp_private);
-  //RSA_free(r);
-  //BN_free(bne);
- 
-  return;
-  }*/
 
 int main(int argc, char **argv) {
     /* for getopt */
@@ -473,21 +409,23 @@ int main(int argc, char **argv) {
     int   port;
     char *save_name = NULL;
     int checkSum = 0;
+    encryptFlag = 0;
 
     check_team(argv[0]);
 
     /* parse the command-line options. */
     /* TODO: add additional opt flags */
-    while ((opt = getopt(argc, argv, "hs:P:G:S:p:c")) != -1) {
+    while ((opt = getopt(argc, argv, "hs:P:G:S:p:l:ce")) != -1) {
         switch(opt) {
-          case 'h': help(argv[0]); break;
-          case 's': server = optarg; break;
-          case 'P': put_name = optarg; break;
-          case 'G': get_name = optarg; break;
-          case 'S': save_name = optarg; break;
-          case 'p': port = atoi(optarg); break;
-          case 'c': checkSum = 1; break;
-        }
+	case 'h': help(argv[0]); break;
+	case 's': server = optarg; break;
+	case 'P': put_name = optarg; break;
+	case 'G': get_name = optarg; break;
+	case 'S': save_name = optarg; break;
+	case 'p': port = atoi(optarg); break;
+	case 'c': checkSum = 1; break;
+	case 'e': encryptFlag = 1; break; 
+	}
     }
 
     /* open a connection to the server */
