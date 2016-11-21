@@ -341,6 +341,7 @@ void get_file(int fd, char *get_name, char *save_name, int checkSum) {
 	   
 	    
 	}
+	printf("%s\n", buf);
 	bzero((bufp - strlen(EOT)), strlen(EOT)); 
 	
   char cmd[10][MAXLINE];

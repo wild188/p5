@@ -540,7 +540,7 @@ void file_server(int connfd, int lru_size) {
 	    //return the OK to the client w/ the getBuff info
 	  }
       char sizeSTR[8192];
-      sprintf(sizeSTR, "%s\n%s\n%i\n%s%s", "OK", getBuff->name, getBuff->size, getBuff->contents, EOT);
+      sprintf(sizeSTR, "%s\n%s\n%i\n%s", "OK", getBuff->name, getBuff->size, getBuff->contents);
       response(connfd, sizeSTR);
 
 
