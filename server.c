@@ -582,7 +582,7 @@ int main(int argc, char **argv) {
     /* for getopt */
     long opt;
     /* NB: the "part 3" behavior only should happen when lru_size > 0 */
-    int  lru_size = 2;
+    int  lru_size = 0;
     int  port     = 9000;
 
     check_team(argv[0]);
