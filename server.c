@@ -286,8 +286,7 @@ void response(int connfd, char * output){
   char buf[8192];
   char * bufp = buf;
   bzero(buf, 8192);
-  strcat(buf, output);
-  strcat(buf, EOT);
+  sprintf(buf, "%s%s", output, EOT);
   int nremain = strlen(buf);
   int nsofar = 0;
     while (nremain > 0) {
