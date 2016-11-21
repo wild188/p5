@@ -18,7 +18,7 @@
 /*
  * help() - Print a help message
  */
-char *EOT = "SUCKA MY BAWLS TWO TIME!";
+char *EOT = "BEAT LAFAYETTE!";
 
 const int PUT = 1;
 const int GET = 2;

@@ -26,7 +26,7 @@
  * help() - Print a help message
  */
 
-char *EOT = "SUCKA MY BAWLS TWO TIME!";
+char *EOT = "BEAT LAFAYETTE!";
 
 char *public_key = "-----BEGIN PUBLIC KEY-----\n"
 "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwMu7BZF451FjUXYNr323\n"
