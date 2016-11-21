@@ -189,13 +189,16 @@ void addFileBuffer(struct fileBuffer * myFile){
       //free(oldVersion);
       //oldVersion = malloc(sizeof(struct fileBuffer *));
         oldVersion = myFile;
+	printf("replaced old version of file in cache\n");
     }else if(cacheSize < maxCacheSize){ //adds a new file to the cache
         cache[cacheSize] = myFile;
         cacheSize++;
+	printf("Added file to cache\n");
     }else{                              //replaces the oldest file in the cache
         int oldestI = removeOldest();
 	    cache[oldestI] = malloc(sizeof(struct fileBuffer));
 	    cache[oldestI] = myFile;
+	    printf("Replaced oldest file in position %i\n", oldestI);
     }
     updateEvictionScores(myFile);
 }
@@ -537,7 +540,7 @@ void file_server(int connfd, int lru_size) {
 
         }
         else{
-          printf("could not open the file");
+          printf("could not open the file: %s", myRequest->name);
           //server needs to send to the client an error message         
         }
 	break;

@@ -275,7 +275,8 @@ void get_file(int fd, char *get_name, char *save_name, int checkSum) {
   }
   int sizeInt;
   if(!sscanf(cmd[2], "%d", &sizeInt)){
-      success = 0;
+    printf("Invalid size: %s\n", cmd[2]);
+    success = 0;
   }
 
   if(cmdVIndex >= 3 && success){
