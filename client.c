@@ -177,7 +177,8 @@ int encryptData(char *fileContents, int size, char* encryptedData){
     index++;
     }*/
   bio = BIO_new_mem_buf((void*)private_key, (int)strlen(private_key));
-  RSA * rsa_privatekey = PEM_read_bio_RSAPrivateKey(bio, NULL, 0, NULL);
+  RSA *rsa_privatekey = PEM_read_bio_RSAPrivateKey(bio, NULL, 0, NULL);
+
   
   
   
@@ -188,7 +189,7 @@ int encryptData(char *fileContents, int size, char* encryptedData){
   return bytes;
 }
 
-void put_file(int fd, char *put_name, int checkSum) {
+void put_file(int fd, char *put_name, int checkSum, int encryptedFlag) {
   char buf[8192];
   off_t size;
   struct stat st;
@@ -290,7 +291,7 @@ void put_file(int fd, char *put_name, int checkSum) {
  * get_file() - get a file from the server accessible via the given socket
  *              fd, and save it according to the save_name
  */
-void get_file(int fd, char *get_name, char *save_name, int checkSum) {
+void get_file(int fd, char *get_name, char *save_name, int checkSum, int encryptedFlag) {
   char writeArr[8192];  
   sprintf(writeArr, "%s\n%s\n%s", "GET", get_name, EOT);
   size_t n = strlen(writeArr);
@@ -336,7 +337,7 @@ void get_file(int fd, char *get_name, char *save_name, int checkSum) {
             bufp += nsofar;
             nremain -= nsofar;
             if (!strcmp(bufp - strlen(EOT), EOT)) {
-	              break;
+	      break;
 	    }
 	   
 	    
@@ -438,7 +439,7 @@ int main(int argc, char **argv) {
     int   port;
     char *save_name = NULL;
     int checkSum = 0;
-    encryptFlag = 0;
+    int encryptFlag = 0;
 
     check_team(argv[0]);
 
@@ -463,9 +464,9 @@ int main(int argc, char **argv) {
 
     /* put or get, as appropriate */
     if (put_name)
-        put_file(fd, put_name, checkSum);
+      put_file(fd, put_name, checkSum, encryptFlag);
     else
-        get_file(fd, get_name, save_name, checkSum);
+      get_file(fd, get_name, save_name, checkSum, encryptFlag);
 
     /* close the socket */
     int rc;
