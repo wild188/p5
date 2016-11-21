@@ -351,7 +351,7 @@ void get_file(int fd, char *get_name, char *save_name, int checkSum) {
             /* update pointer for next bit of reading */
             bufp += nsofar;
             nremain -= nsofar;
-            if (*(bufp-1) == '\n') {
+            if (!strcmp(bufp - strlen(EOT), EOT)) {
 	              break;
 	    }
 	   
