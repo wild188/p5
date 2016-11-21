@@ -29,7 +29,7 @@
 char *EOT = "BEAT LAFAYETTE!";
 int encryptFlag;
 
-/*char *public_key = "-----BEGIN PUBLIC KEY-----\n"
+char *public_key = "-----BEGIN PUBLIC KEY-----\n"
 "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwMu7BZF451FjUXYNr323\n"
 "aeeaCW2a7s6eHHs8Gz5qgQ/zDegub6is3jwdTZJyGcRcN1DxKQsLcOa3F18KSiCk\n"
 "yzIWjNV4YH7GdV7Ke2qLjcQUs7wktGUKyPYJmDWGYv/QN0Sbbol9IbeLjSBHUt16\n"
@@ -65,7 +65,7 @@ char *private_key = "-----BEGIN RSA PRIVATE KEY-----\n"
 "Q06ErQKBgHzXwrSRWppsQGdxSrU1Ynwg0bIirfi2N8zyHgFutQzdkDXY5N0gRG7a\n"
 "Xz8GFJecE8Goz8Mw2NigtBC4EystXievCwR3EztDyU5PgvEQV7d+0GLKtCG6QFqC\n"
 "gZKlwzSf9rLhfXYCrWgqg7ZXsiaADQePw+fU2dudERxmg3gokBFL\n"
-"-----END RSA PRIVATE KEY-----\n";*/
+"-----END RSA PRIVATE KEY-----\n";
 
 
 void help(char *progname) {
@@ -133,27 +133,31 @@ void readServerResponse(int fd, ssize_t nsofar, size_t nremain, char *bufp){
       die("Server error: ", "received EOF");
     bufp += nsofar;
     nremain -= nsofar;
-    if (*(bufp-1) == '\n') {
-      *bufp = 0;
+    if (!strcmp(bufp - strlen(EOT), EOT)) {
       break;
     }
+
+
   }
+  bzero((bufp - strlen(EOT)), strlen(EOT));
 }
 
+
 int encryptData(char *fileContents, int size, char* encryptedData){
-  char ch = 'a';
-  char *public_key;
-  int index = 0;
-  FILE *in = fopen("public.pem", "r");
-  while((ch = fgetc(in)) != EOF){
-    public_key[index] = ch;
-    index++;
-  }
+  //char ch = 'a';
+  //char public_key[8192];
+  //bzero(public_key, 8192);
+  //int index = 0;
+  //FILE *in = fopen("public.pem", "r");
+  //while((ch = fgetc(in)) != EOF){
+  //public_key[index] = ch;
+  // index++;
+  //}
   BIO *bio;
   bio = BIO_new_mem_buf((void*)public_key, (int)strlen(public_key));
   RSA *rsa_publickey = PEM_read_bio_RSA_PUBKEY(bio, NULL, 0, NULL);
   BIO_free(bio);
-  fclose(in);
+  // fclose(in);
   int maxSize = RSA_size(rsa_publickey);
   //encryptedData = (unsigned char *) malloc(maxSize * sizeof(char));
 
@@ -164,16 +168,16 @@ int encryptData(char *fileContents, int size, char* encryptedData){
 
   unsigned char *decrypted = (unsigned char *) malloc(1000);
 
-  char private_key[8192];
+  /*char private_key[8192];
   bzero(private_key, 8192);
   in = fopen("private.pem", "r");
   index = 0;
   while((ch = fgetc(in)) != EOF){
     private_key[index] = ch;
     index++;
-  }
+    }*/
   bio = BIO_new_mem_buf((void*)private_key, (int)strlen(private_key));
-  RSA * rsa_privatekey = PEM_read_bio_PrivateKey(bio, NULL, 0, NULL);
+  RSA * rsa_privatekey = PEM_read_bio_RSAPrivateKey(bio, NULL, 0, NULL);
   
   
   
@@ -273,11 +277,11 @@ void put_file(int fd, char *put_name, int checkSum) {
     }
     bufp1 += nsofar1;
     nremain1 -= nsofar1;
-    if (!strcmp(bufp - strlen(EOT), EOT)) {
+    if (!strcmp(bufp1 - strlen(EOT), EOT)) {
       break;
     }
   }
-  bzero((bufp - strlen(EOT)), strlen(EOT));
+  bzero((bufp1 - strlen(EOT)), strlen(EOT));
   printf("%s", buf1);
   return;
 }
@@ -337,6 +341,7 @@ void get_file(int fd, char *get_name, char *save_name, int checkSum) {
 	   
 	    
 	}
+	bzero((bufp - strlen(EOT)), strlen(EOT)); 
 	
   char cmd[10][MAXLINE];
 	bzero(cmd, MAXLINE);
@@ -374,36 +379,46 @@ void get_file(int fd, char *get_name, char *save_name, int checkSum) {
     printf("Invalid size: %s\n", cmd[2]);
     success = 0;
   }
-  if(encryptedFlag){
-    char ch = 'a';
+  unsigned char decrypted[1000];
+  bzero(decrypted, 1000);
+  int decryptSize = 0;
+  if(encryptFlag){
+    /*char ch = 'a';
     char *private_key;
     int index1 = 0;
     FILE *in = fopen("private.pem", "r");
     while((ch = fgetc(in)) != EOF){
       private_key[index1] = ch;
       index1++;
-    }
+      }*/
     BIO *bio = BIO_new_mem_buf((void*)private_key, (int)strlen(private_key));
     RSA *rsa_privatekey = PEM_read_bio_RSAPrivateKey(bio, NULL, 0, NULL);
     BIO_free(bio);
-    unsigned char *decrypted = (unsigned char *) malloc(1000);
 
-    // Fill buffer with decrypted data                                    
-    RSA_private_decrypt(sizeInt, cmd[3], decrypted, rsa_privatekey, RSA_PKCS1_PADDING);
+    printf("cmd[3] is: %s \nand the size is %i\n", cmd[3], sizeInt);
+    decryptSize = RSA_private_decrypt(sizeInt, cmd[3], decrypted, rsa_privatekey, RSA_PKCS1_PADDING);
+    printf("the decrypted contents is: %s\n", decrypted);
   }
 
   if(cmdVIndex >= 3 && success){
     FILE *myFile;
     if((myFile = fopen(save_name, "w")) != NULL){
-      int i;
-      for(i = 0; i < sizeInt; i++){
-	if(encryptedFlag){
+      int i = 0;
+      if(encryptFlag){
+	char ch = 'a';
+	while((ch = decrypted[i]) != EOF && i < decryptSize){
 	  fputc(decrypted[i], myFile);
+	  i++;
 	}
-	else{
+      }
+      else{
+	for(i = 0; i < sizeInt; i++){
 	  fputc(cmd[3][i], myFile);
 	}
       }
+	  
+	
+     
     }else{
       printf("Failed to open file for write\n");
     }
