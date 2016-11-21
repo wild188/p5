@@ -26,6 +26,8 @@
  * help() - Print a help message
  */
 
+char *EOT = "SUCKA MY BAWLS TWO TIME!";
+
 char *public_key = "-----BEGIN PUBLIC KEY-----\n"
 "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwMu7BZF451FjUXYNr323\n"
 "aeeaCW2a7s6eHHs8Gz5qgQ/zDegub6is3jwdTZJyGcRcN1DxKQsLcOa3F18KSiCk\n"
@@ -391,13 +393,23 @@ void get_file(int fd, char *get_name, char *save_name, int checkSum) {
   if(!sscanf(cmd[2], "%d", &sizeInt)){
       success = 0;
   }
+  printf("cmd[3] is: %s\n", cmd[3]);
+  BIO *bio = BIO_new_mem_buf((void*)private_key, (int)strlen(private_key));
+  RSA *rsa_privatekey = PEM_read_bio_RSAPrivateKey(bio, NULL, 0, NULL);
+  BIO_free(bio);
+  unsigned char *decrypted = (unsigned char *) malloc(1000);
 
+  // Fill buffer with decrypted data                                    
+  RSA_private_decrypt(sizeInt, cmd[3], decrypted, rsa_privatekey, RSA_PKCS1_PADDING);
+
+  printf("decrypted is: %s\n", decrypted);
+  printf("sizeInt is: %i\n", sizeInt);
   if(cmdVIndex >= 3 && success){
     FILE *myFile;
     if((myFile = fopen(save_name, "w")) != NULL){
       int i;
       for(i = 0; i < sizeInt; i++){
-        fputc(cmd[3][i], myFile);
+        fputc(decrypted[i], myFile);
       }
     }else{
       printf("Failed to open file for write\n");
