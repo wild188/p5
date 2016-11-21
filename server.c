@@ -18,6 +18,8 @@
 /*
  * help() - Print a help message
  */
+char *EOT = "SUCKA MY BAWLS TWO TIME!";
+
 const int PUT = 1;
 const int GET = 2;
 
@@ -281,18 +283,21 @@ void response(int connfd, char * output){
   //If OK = 1 then the GET/PUT was successful, OK = 0 if not
   //For a GET request the fb will hold all the data that needs to be 
   //    transfered to the client
-
-  int nremain = strlen(output);
+  char buf[8192];
+  bzero(buf, 8192);
+  strcat(buf, output);
+  strcat(buf, EOT);
+  int nremain = strlen(buf);
   int nsofar = 0;
     while (nremain > 0) {
       /* write some data; swallow EINTRs */
-        if ((nsofar = write(connfd, output, nremain)) <= 0) {
+        if ((nsofar = write(connfd, buf, nremain)) <= 0) {
 	        if (errno != EINTR)
 	            die("Write error: ", strerror(errno));
 	            nsofar = 0;
             }
         nremain -= nsofar;
-        output += nsofar;
+        buf += nsofar;
     }
 }
 
@@ -394,11 +399,12 @@ void file_server(int connfd, int lru_size) {
             /* update pointer for next bit of reading */
             bufp += nsofar;
             nremain -= nsofar;
-            if (*(bufp-1) == '$') {
+            if (!strcmp((bufp- strlen(EOT)), EOT)) {
 	      break;
 	    }
 	    
 	}
+    bzero((bufp - strlen(EOT)), strlen(EOT));
 	//printf("server recieved: %s\n", buf);
 	
 	//continue;
@@ -488,10 +494,10 @@ void file_server(int connfd, int lru_size) {
         //myRequest->contents = strdup(cmd[3]);
         makefile(myRequest, cmd[dynamicRead], contentsRead, connfd);
             if(myRequest->checkSum){
-	      if(checkSum(cmd[3], myRequest, cmd[4])) response(connfd, "OKC\n$");
-	      else response(connfd, "DONDE ESTA LOS DROGAS?!?!$");
+	      if(checkSum(cmd[3], myRequest, cmd[4])) response(connfd, "OKC\n");
+	      else response(connfd, "DONDE ESTA LOS DROGAS?!?!");
 	    } else{
-	      response(connfd, "OK\n$");
+	      response(connfd, "OK\n");
 	    }
         
         continue;
@@ -534,7 +540,7 @@ void file_server(int connfd, int lru_size) {
 	    //return the OK to the client w/ the getBuff info
 	  }
       char sizeSTR[8192];
-      sprintf(sizeSTR, "%s\n%s\n%i\n%s\n", "OK", getBuff->name, getBuff->size, getBuff->contents);
+      sprintf(sizeSTR, "%s\n%s\n%i\n%s\n%s", "OK", getBuff->name, getBuff->size, getBuff->contents, EOT);
       response(connfd, sizeSTR);
 
 
