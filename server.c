@@ -284,6 +284,7 @@ void response(int connfd, char * output){
   //For a GET request the fb will hold all the data that needs to be 
   //    transfered to the client
   char buf[8192];
+  char * bufp = buf;
   bzero(buf, 8192);
   strcat(buf, output);
   strcat(buf, EOT);
@@ -291,13 +292,13 @@ void response(int connfd, char * output){
   int nsofar = 0;
     while (nremain > 0) {
       /* write some data; swallow EINTRs */
-        if ((nsofar = write(connfd, buf, nremain)) <= 0) {
+        if ((nsofar = write(connfd, bufp, nremain)) <= 0) {
 	        if (errno != EINTR)
 	            die("Write error: ", strerror(errno));
 	            nsofar = 0;
             }
         nremain -= nsofar;
-        buf += nsofar;
+        bufp += nsofar;
     }
 }
 
